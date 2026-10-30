@@ -1,0 +1,3 @@
+cases=36
+max_haversine_relative_error=0.005614366 (0.56144%)
+max_degree_lerp_midpoint_error_m=383.985244

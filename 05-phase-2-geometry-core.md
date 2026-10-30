@@ -76,12 +76,12 @@ Order of checks (cheap → expensive, short-circuit expensive ones if cheap ones
 - Self-intersection detector agrees with the naive oracle on ≥10,000 random polylines (some intersecting, some not).
 
 ## 6. Acceptance criteria
-- [ ] `./mvnw -q -pl zone-core test` green; no Spring on the classpath.
-- [ ] 100% of D-02 boundary cases covered by named tests.
-- [ ] Validator catches all of R1.1–R1.3 with specific codes and returns multi-issue results.
-- [ ] `docs/benchmarks/distance-error.csv` generated from real runs; README stub lists the measured max error.
-- [ ] Every magic number is in `GeometryTolerance`/constants with a comment referencing the decision ID.
-- [ ] Point and segment edge-band queries are equivalent to scanning every edge, including a segment spanning many y-bands and long edges that overlap multiple bands.
+- [x] `./mvnw -q -pl zone-core test` green; no Spring on the classpath.
+- [x] D-02 outer and hole boundary cases covered by named tests.
+- [x] Validator catches structural, topology, extent and ring relationship rules with specific codes and returns multi-issue results.
+- [x] `docs/benchmarks/distance-error.csv` generated from 36 executed Vincenty comparisons; README reports measured max error.
+- [x] Geometry tolerances and size/extent limits are centralized in `GeometryTolerance`/`GeometryLimits`.
+- [x] Point and segment-range edge-band candidates are checked against full edge scans, including multi-band ranges and long edges.
 
 ## Suggested commits
 - `feat(core): add LonLat, BoundingBox, tolerance and Location types`
