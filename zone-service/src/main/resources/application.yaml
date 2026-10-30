@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: polygon-zones-service
+  threads:
+    virtual:
+      enabled: true
+  jackson: {}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/zones}
+    username: ${DB_USER:zones}
+    password: ${DB_PASSWORD:zones_dev_only}
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 2000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+server:
+  shutdown: graceful
+  port: 8080
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+logging:
+  structured:
+    format:
+      console: ecs
+zones:
+  geometry:
+    boundary-epsilon-deg: 1.0e-9
+    max-vertices: 50000
+    max-holes: 256
+  pipeline:
+    shards: 0
+    queue-capacity: 10000
+    reorder-hold-ms: 2000
+    reorder-max-buffered: 64
+    checkpoint-every-pings: 200
+    checkpoint-every-ms: 2000
+  cache:
+    zone-latest-ttl: 5s
+    historical-snapshots-max-vertices: 5000000
+---
+spring:
+  config:
+    activate:
+      on-profile: demo
+# Demo-only database defaults are documented in README; production credentials are supplied through environment variables.
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  main:
+    banner-mode: off

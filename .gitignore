@@ -1,0 +1,11 @@
+target/
+**/target/
+.mvn/wrapper/dists/
+**/dependency-reduced-pom.xml
+node_modules/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+.env
+docs/benchmarks/tmp/

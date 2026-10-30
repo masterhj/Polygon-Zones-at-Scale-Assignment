@@ -52,11 +52,11 @@
 
 ## Acceptance criteria
 
-- [ ] `./mvnw -v` reports Java 25.
-- [ ] `./mvnw -q verify` green from a clean clone (Docker running).
-- [ ] `zone-core` has **no** non-test dependencies (`./mvnw -pl zone-core dependency:tree` proves it; enforcer rule active).
-- [ ] No snapshot/milestone/RC versions anywhere (`grep -R "SNAPSHOT\|-M[0-9]\|RC[0-9]" --include=pom.xml .` is empty except the project's own version).
-- [ ] CI workflow file present.
+- [x] `./mvnw -v` reports Java 25.
+- [x] `./mvnw -q verify` green from a clean clone (Docker running).
+- [x] `zone-core` has **no** non-test dependencies (`./mvnw -pl zone-core dependency:tree` proves it; enforcer rule active).
+- [x] No snapshot/milestone/RC versions anywhere (`grep -R "SNAPSHOT\|-M[0-9]\|RC[0-9]" --include=pom.xml .` is empty except the project's own version).
+- [x] CI workflow file present.
 
 ## Suggested commits
 - `chore: initialise multi-module Maven project (Java 25, Spring Boot 4.1)`
