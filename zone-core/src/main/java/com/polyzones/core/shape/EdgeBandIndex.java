@@ -6,6 +6,7 @@ import java.util.function.IntConsumer;
 
 /** Y-band candidate index for ring edges. */
 public final class EdgeBandIndex {
+    private static final int[] EMPTY = new int[0];
     private final double minY, maxY, bandHeight;
     private final int[][] bands;
     private final double[] edgeMinY, edgeMaxY;
@@ -33,8 +34,12 @@ public final class EdgeBandIndex {
     }
 
     public void forPoint(double y, IntConsumer consumer) {
-        if (y < minY - eps || y > maxY + eps) return;
-        for (int edge : bands[band(y, bands.length)]) if (edgeMinY[edge] <= y && edgeMaxY[edge] >= y) consumer.accept(edge);
+        for (int edge : pointCandidates(y)) if (edgeMinY[edge] <= y && edgeMaxY[edge] >= y) consumer.accept(edge);
+    }
+
+    int[] pointCandidates(double y) {
+        if (y < minY - eps || y > maxY + eps) return EMPTY;
+        return bands[band(y,bands.length)];
     }
 
     public void forRange(double lowY, double highY, IntConsumer consumer) {

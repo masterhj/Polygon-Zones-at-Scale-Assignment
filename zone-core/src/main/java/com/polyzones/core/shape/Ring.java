@@ -39,6 +39,10 @@ public final class Ring {
     }
     public int edgeCount() { return xs.length - 1; }
     public int vertexCount() { return edgeCount(); }
+    public LonLat vertexAt(int ordinal) {
+        if (ordinal < 0 || ordinal >= edgeCount()) throw new IndexOutOfBoundsException(ordinal);
+        return new LonLat(xs[ordinal],ys[ordinal]);
+    }
     public double signedArea() { return signedArea; }
     public BoundingBox bounds() { return bounds; }
     double x(int i) { return xs[i]; }
@@ -48,18 +52,17 @@ public final class Ring {
     public Location locate(double x, double y, GeometryTolerance tol) {
         double eps = tol.boundaryEpsDeg();
         if (!bounds.contains(x, y, eps)) return Location.OUTSIDE;
-        boolean[] boundary = {false};
-        edgeBands.forPoint(y, edge -> { if (!boundary[0] && distanceToSegment(x, y, xs[edge], ys[edge], xs[edge + 1], ys[edge + 1]) <= eps) boundary[0] = true; });
-        if (boundary[0]) return Location.BOUNDARY;
-        boolean[] inside = {false};
-        edgeBands.forPoint(y, edge -> {
+        int[] candidates=edgeBands.pointCandidates(y);
+        for(int edge:candidates) if(distanceToSegment(x,y,xs[edge],ys[edge],xs[edge+1],ys[edge+1])<=eps) return Location.BOUNDARY;
+        boolean inside=false;
+        for(int edge:candidates) {
             double x1 = xs[edge], y1 = ys[edge], x2 = xs[edge + 1], y2 = ys[edge + 1];
             if ((y1 > y) != (y2 > y)) {
                 double crossingX = x1 + (y - y1) * (x2 - x1) / (y2 - y1);
-                if (x < crossingX) inside[0] = !inside[0];
+                if (x < crossingX) inside = !inside;
             }
-        });
-        return inside[0] ? Location.INSIDE : Location.OUTSIDE;
+        }
+        return inside ? Location.INSIDE : Location.OUTSIDE;
     }
     static double distanceToSegment(double px, double py, double ax, double ay, double bx, double by) {
         double dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;

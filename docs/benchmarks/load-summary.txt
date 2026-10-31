@@ -1,0 +1,12 @@
+baseline_qps=50000.00
+baseline_service_p99_ns=9215
+baseline_schedule_to_done_p99_ns=20719
+baseline_dropped=0
+rebuild_qps=50000.00
+rebuild_service_p99_ns=4127
+rebuild_schedule_to_done_p99_ns=20383
+rebuild_dropped=0
+service_p99_difference_ns=-5088
+service_p99_difference_percent=-55.214
+schedule_to_done_p99_difference_ns=-336
+schedule_to_done_p99_difference_percent=-1.622

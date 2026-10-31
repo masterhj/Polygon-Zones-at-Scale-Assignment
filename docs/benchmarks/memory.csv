@@ -1,0 +1,6 @@
+polygons,vertices_per_polygon,seed,retained_heap_bytes,build_stats_approx_bytes,measurement_method
+1000,16,5095029,1715328,419517,Runtime totalMemory-freeMemory delta after full GC; approximate and process-sensitive
+5000,16,5219029,7279272,2084559,Runtime totalMemory-freeMemory delta after full GC; approximate and process-sensitive
+20000,16,5684029,24418992,8308803,Runtime totalMemory-freeMemory delta after full GC; approximate and process-sensitive
+100000,16,8164029,122581096,41657256,Runtime totalMemory-freeMemory delta after full GC; approximate and process-sensitive
+5000,500,5219513,120986544,44619791,Runtime totalMemory-freeMemory delta after full GC; approximate and process-sensitive

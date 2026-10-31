@@ -76,11 +76,11 @@ This remains the open-loop **in-process point-query** workload, corresponding to
 Fill separate point-query, admission, and durable-processing rows from real output only; if a run was not possible say "not measured". Keep request latency and enqueue-to-durable latency separate.
 
 ## 6. Acceptance criteria
-- [ ] R-tree results identical to naive baseline on all fixtures.
-- [ ] 5,000-polygon benchmark executed; raw outputs committed; numbers in README match outputs.
-- [ ] Open-loop 50k qps test reports achieved rate, p50, p99 with environment details (if the machine cannot sustain it, report the max sustained rate honestly and say why).
-- [ ] Complexity and scaling-limit section written (README stub now, finalised in phase 10).
-- [ ] No allocation in `forEachContaining` hot path (verify with a JMH `-prof gc` run; report `gc.alloc.rate.norm`).
+- [x] R-tree results identical to naive baseline on all fixtures; complete sorted `ZoneHit` records are compared across 50 fixed-seed × 100,000-point scenarios and additional edge cases.
+- [x] 5,000-polygon benchmark executed; raw JMH, build, candidate, load, environment and memory outputs are in `docs/benchmarks/`; README figures match those results.
+- [x] Two 60-second open-loop 50k qps runs report achieved rate and latency percentiles with machine details; each delivered 50,000 queries/s with no drops or worker failures.
+- [x] Complexity and measured scaling limits are documented in README and `docs/benchmarks/methodology.md`.
+- [x] `forEachContaining` GC profile measured 0.00077 B/op (16 vertices) and 0.00216 B/op (500 vertices) at 5,000 zones, effectively profiler resolution after warmup; recorded in the benchmark report.
 
 ## Suggested commits
 - `feat(core): immutable STR R-tree zone index with flat arrays`

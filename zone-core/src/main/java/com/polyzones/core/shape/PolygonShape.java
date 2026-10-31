@@ -29,7 +29,8 @@ public final class PolygonShape {
         Location outerLocation = outer.locate(lon, lat, tol);
         if (outerLocation == Location.OUTSIDE) return Location.OUTSIDE;
         if (outerLocation == Location.BOUNDARY) return Location.BOUNDARY;
-        for (Ring hole : holes) {
+        for (int i=0;i<holes.size();i++) {
+            Ring hole=holes.get(i);
             if (!hole.bounds().contains(lon, lat, tol.boundaryEpsDeg())) continue;
             Location location = hole.locate(lon, lat, tol);
             if (location == Location.BOUNDARY) return Location.BOUNDARY;

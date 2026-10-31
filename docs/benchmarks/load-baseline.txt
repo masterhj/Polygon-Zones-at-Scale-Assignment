@@ -1,0 +1,11 @@
+workload=in-process point-containment (one indexed query; not HTTP or durable processing)
+mode=baseline target_qps=50000 duration_seconds=60 polygons=5000 vertices_per_polygon=16 zone_seed=1819238756 point_seed=482905517684 readers=8
+scheduled=3000000 accepted_to_queue=3000000 dropped_overload=0 completed_total=3000000 completed_by_window_end=3000000 queue_capacity=65536 queue_high_water=30
+worker_failures=0
+achieved_completed_qps=50000.00 schedule_seconds=60.000
+service_latency_scope=query-start-to-completion for accepted queries; expected_interval_ns=20000 HdrHistogram coordinated-omission correction enabled
+service_p50_ns=833 service_p90_ns=1625 service_p99_ns=9215 service_p99_9_ns=16127 service_max_ns=130047
+schedule_to_done_scope=scheduled-deadline-to-query-completion; no correction applied because arrivals are already paced open-loop
+schedule_to_done_p50_ns=8791 schedule_to_done_p90_ns=11167 schedule_to_done_p99_ns=20719 schedule_to_done_p99_9_ns=32863 schedule_to_done_max_ns=608767
+snapshot_versions_built=1
+result_checksum=3554979058

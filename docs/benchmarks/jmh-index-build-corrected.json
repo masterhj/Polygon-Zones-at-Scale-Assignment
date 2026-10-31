@@ -1,0 +1,294 @@
+[
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.polyzones.bench.IndexBuildBenchmark.average",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx6g"
+        ],
+        "jdkVersion" : "25.0.2",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.2",
+        "warmupIterations" : 5,
+        "warmupTime" : "2 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "2 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "verticesPerPolygon" : "16"
+        },
+        "primaryMetric" : {
+            "score" : 0.0026793335136216278,
+            "scoreError" : 2.1764147317271602E-5,
+            "scoreConfidence" : [
+                0.002657569366304356,
+                0.0027010976609388995
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.0026441077615283267,
+                "50.0" : 0.0026871102134073026,
+                "90.0" : 0.0027030274142857144,
+                "95.0" : 0.002721358157061117,
+                "99.0" : 0.0027223225345997287,
+                "99.9" : 0.0027223225345997287,
+                "99.99" : 0.0027223225345997287,
+                "99.999" : 0.0027223225345997287,
+                "99.9999" : 0.0027223225345997287,
+                "100.0" : 0.0027223225345997287
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    0.002663127822045153,
+                    0.0026506459154557464,
+                    0.0026624859455511287,
+                    0.0026495726552179656,
+                    0.002651404998678996,
+                    0.0026784504899866487,
+                    0.0026515531149273446,
+                    0.002662429320954907,
+                    0.002650296895640687,
+                    0.0026441077615283267
+                ],
+                [
+                    0.0027017913862718707,
+                    0.002695769936827957,
+                    0.0027009753822341857,
+                    0.0026962965389784946,
+                    0.0027005127085020244,
+                    0.0027030349838274934,
+                    0.0027029592884097037,
+                    0.0027223225345997287,
+                    0.002699833446091644,
+                    0.002699099146702557
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.polyzones.bench.IndexBuildBenchmark.average",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx6g"
+        ],
+        "jdkVersion" : "25.0.2",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.2",
+        "warmupIterations" : 5,
+        "warmupTime" : "2 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "2 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "verticesPerPolygon" : "500"
+        },
+        "primaryMetric" : {
+            "score" : 0.0027592243611639627,
+            "scoreError" : 5.770099973688762E-6,
+            "scoreConfidence" : [
+                0.002753454261190274,
+                0.0027649944611376513
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.002751171924554184,
+                "50.0" : 0.002759184921595598,
+                "90.0" : 0.002769726220138693,
+                "95.0" : 0.0027754062786856646,
+                "99.0" : 0.002775694193905817,
+                "99.9" : 0.002775694193905817,
+                "99.99" : 0.002775694193905817,
+                "99.999" : 0.002775694193905817,
+                "99.9999" : 0.002775694193905817,
+                "100.0" : 0.002775694193905817
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    0.002754142651994498,
+                    0.002767839195862069,
+                    0.002754529287482806,
+                    0.002775694193905817,
+                    0.0027529163799725653,
+                    0.0027514252976680383,
+                    0.0027542676854395605,
+                    0.0027530254924554185,
+                    0.002751171924554184,
+                    0.002752942157750343
+                ],
+                [
+                    0.0027601871856946353,
+                    0.002756742217032967,
+                    0.002762275482093664,
+                    0.002761827355862069,
+                    0.0027614817744154056,
+                    0.002760872299310345,
+                    0.002759632795048143,
+                    0.0027587370481430536,
+                    0.002764840909090909,
+                    0.0027699358895027625
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.polyzones.bench.IndexBuildBenchmark.singleShot",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx6g"
+        ],
+        "jdkVersion" : "25.0.2",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.2",
+        "warmupIterations" : 5,
+        "warmupTime" : "2 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "2 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "verticesPerPolygon" : "16"
+        },
+        "primaryMetric" : {
+            "score" : 0.005899518799999999,
+            "scoreError" : 0.0016603227275779075,
+            "scoreConfidence" : [
+                0.0042391960724220915,
+                0.007559841527577906
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.004147917,
+                "50.0" : 0.0052482710000000005,
+                "90.0" : 0.009316733700000005,
+                "95.0" : 0.011862722299999998,
+                "99.0" : 0.011986041,
+                "99.9" : 0.011986041,
+                "99.99" : 0.011986041,
+                "99.999" : 0.011986041,
+                "99.9999" : 0.011986041,
+                "100.0" : 0.011986041
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    0.007490334,
+                    0.011986041,
+                    0.006322459,
+                    0.009519667,
+                    0.005964708,
+                    0.00525925,
+                    0.006104416,
+                    0.005237292,
+                    0.004147917,
+                    0.004504875
+                ],
+                [
+                    0.006394375,
+                    0.006389542,
+                    0.004893417,
+                    0.004866709,
+                    0.005088417,
+                    0.0051425,
+                    0.004790083,
+                    0.005369833,
+                    0.00420675,
+                    0.004311791
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.polyzones.bench.IndexBuildBenchmark.singleShot",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx6g"
+        ],
+        "jdkVersion" : "25.0.2",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.2",
+        "warmupIterations" : 5,
+        "warmupTime" : "2 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "2 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "verticesPerPolygon" : "500"
+        },
+        "primaryMetric" : {
+            "score" : 0.0053385166,
+            "scoreError" : 0.0013267381511012824,
+            "scoreConfidence" : [
+                0.004011778448898717,
+                0.0066652547511012825
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.003752,
+                "50.0" : 0.0046982915,
+                "90.0" : 0.007991541400000001,
+                "95.0" : 0.00915356905,
+                "99.0" : 0.009209917,
+                "99.9" : 0.009209917,
+                "99.99" : 0.009209917,
+                "99.999" : 0.009209917,
+                "99.9999" : 0.009209917,
+                "100.0" : 0.009209917
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    0.007139209,
+                    0.007168792,
+                    0.006749583,
+                    0.0054765,
+                    0.004702125,
+                    0.004694458,
+                    0.004638292,
+                    0.004537292,
+                    0.003752,
+                    0.003865042
+                ],
+                [
+                    0.009209917,
+                    0.008082958,
+                    0.005597625,
+                    0.004890083,
+                    0.004768666,
+                    0.004586166,
+                    0.0045505,
+                    0.004584083,
+                    0.004024458,
+                    0.003752583
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]

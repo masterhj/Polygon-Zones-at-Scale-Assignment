@@ -1,0 +1,6 @@
+memory polygons=1000 vertices=16 seed=5095029 retainedHeapDelta=1715328 buildApprox=419517
+memory polygons=5000 vertices=16 seed=5219029 retainedHeapDelta=7279272 buildApprox=2084559
+memory polygons=20000 vertices=16 seed=5684029 retainedHeapDelta=24418992 buildApprox=8308803
+memory polygons=100000 vertices=16 seed=8164029 retainedHeapDelta=122581096 buildApprox=41657256
+memory polygons=5000 vertices=500 seed=5219513 retainedHeapDelta=120986544 buildApprox=44619791
+Wrote 6 memory records to docs/benchmarks/memory.csv using Runtime heap delta after System.gc().
