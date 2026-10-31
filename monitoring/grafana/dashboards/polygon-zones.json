@@ -1,0 +1,127 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Ingestion & Pipeline Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 1 },
+      "id": 1,
+      "title": "Ping Ingestion Rate",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(ping_admitted_total[1m])", "legendFormat": "Admitted / sec" },
+        { "expr": "rate(ping_duplicate_total[1m])", "legendFormat": "Duplicate / sec" },
+        { "expr": "rate(ping_rejected_total[1m])", "legendFormat": "Rejected ({{reason}}) / sec" }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 1 },
+      "id": 2,
+      "title": "Pipeline Queue Depth",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "ping_queue_depth", "legendFormat": "Queue Depth" }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 1 },
+      "id": 3,
+      "title": "Failures & Retries",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(checkpoint_failures_total[1m])", "legendFormat": "Checkpoint Failures / sec" },
+        { "expr": "rate(ping_worker_failure_total[1m])", "legendFormat": "Worker Failures / sec" },
+        { "expr": "rate(ping_backpressure_total[1m])", "legendFormat": "Backpressure / sec" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 },
+      "id": 101,
+      "title": "HTTP Traffic & Latency",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 9 },
+      "id": 4,
+      "title": "HTTP Request Rate by Endpoint",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (uri, status) (rate(http_server_requests_seconds_count[1m]))", "legendFormat": "{{uri}} ({{status}})" }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 9 },
+      "id": 5,
+      "title": "Average HTTP Response Duration",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(http_server_requests_seconds_sum[1m]) / rate(http_server_requests_seconds_count[1m])", "legendFormat": "{{uri}}" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "id": 102,
+      "title": "JVM & Database Resource Health",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 17 },
+      "id": 6,
+      "title": "JVM Heap Memory Usage",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"heap\"}", "legendFormat": "Used Heap ({{id}})" },
+        { "expr": "jvm_memory_max_bytes{area=\"heap\"}", "legendFormat": "Max Heap" }
+      ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 17 },
+      "id": 7,
+      "title": "HikariCP Connection Pool",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "Active Connections" },
+        { "expr": "hikaricp_connections_idle", "legendFormat": "Idle Connections" },
+        { "expr": "hikaricp_connections_pending", "legendFormat": "Pending Threads" }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["polygon-zones", "moveinsync"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MoveInSync Polygon Zones Dashboard",
+  "version": 1
+}

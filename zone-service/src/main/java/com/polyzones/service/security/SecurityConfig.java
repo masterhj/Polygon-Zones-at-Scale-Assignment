@@ -44,7 +44,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(errors -> errors.authenticationEntryPoint(problems).accessDeniedHandler(problems))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/auth/login", "/actuator/health/**").permitAll()
+                    .requestMatchers("/api/v1/auth/login", "/actuator/health/**", "/actuator/prometheus").permitAll()
                     .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/v1/zones/validate", "/api/v1/zones").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/v1/zones/**").hasRole("ADMIN")

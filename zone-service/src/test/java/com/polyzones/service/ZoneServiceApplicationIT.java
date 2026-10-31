@@ -48,6 +48,8 @@ class ZoneServiceApplicationIT {
         Integer migrations = jdbc.queryForObject("select count(*) from flyway_schema_history where success", Integer.class);
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/health")).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        HttpRequest prometheusRequest = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/prometheus")).GET().build();
+        HttpResponse<String> prometheusResponse = HttpClient.newHttpClient().send(prometheusRequest, HttpResponse.BodyHandlers.ofString());
         HttpRequest protectedManagement = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/info")).GET().build();
         HttpResponse<String> protectedResponse = HttpClient.newHttpClient().send(protectedManagement, HttpResponse.BodyHandlers.ofString());
         assertThat(migrations).isEqualTo(6);
@@ -57,6 +59,8 @@ class ZoneServiceApplicationIT {
         assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='alerts'", Integer.class)).isEqualTo(1);
         assertThat(response.statusCode()).isBetween(200, 299);
         assertThat(response.body()).contains("\"status\":\"UP\"");
+        assertThat(prometheusResponse.statusCode()).isEqualTo(200);
+        assertThat(prometheusResponse.body()).contains("jvm_memory_used_bytes");
         assertThat(protectedResponse.statusCode()).isEqualTo(401);
     }
 
