@@ -1,9 +1,9 @@
 # Implementation Log
 
 ## Current status
-- Current phase: Phase 4 — Versioning and Live Swap (complete).
-- Completed phases: Phase 1, Phase 2, Phase 3, Phase 4.
-- Next phase: Phase 5 — Trip Attribution and Ping Pipeline.
+- Current phase: Phase 5 — Trip Attribution and Ping Pipeline (implementation and verification complete).
+- Completed phases: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5.
+- Next phase: Phase 6 — API, Persistence and OOP.
 
 ## Phase 1 — Repository Bootstrap
 - Requirements: S1, S3, S6, A4; decisions D-01, D-12, D-18.
@@ -46,3 +46,14 @@
 - Review fixes: changed lane cleanup to a reference-counted map operation to avoid two locks racing for the same tenant; bounded the whole publication wait by one timeout; made a post-commit swap failure close the application without rewriting the durable PUBLISHED row; retained the prior published snapshot on builder failures; added status-filtering and restart tests. The initial test fixture accidentally passed 5,000 seconds instead of 5 seconds; corrected and reran the 10-second test successfully. An initial full verify found stale duplicate `.class` artifacts under `target`; `clean verify` removed them and passed.
 - Limitations: this phase supplies the publishing, persistence, and snapshot foundation. REST historical-query endpoints and trip/ping processing arrive in Phases 5–6; their acceptance tests remain phase-gated. The single-instance database lock and its process/connection-loss behavior are scheduled for Phase 10 as approved.
 - Acceptance: all Phase 4 criteria are checked in `07-phase-4-versioning-and-live-swap.md`.
+
+## Phase 5 — Trip Attribution and Ping Pipeline
+- Requirements: R3.1–R3.3, EX1, K1, P3; decisions D-04, D-06, D-07, D-09, D-10, D-15, D-21.
+- Status: implementation, PostgreSQL persistence, unit/integration verification and independent diff review complete. No Phase 6 API work was started.
+- Core: added exact chord splitting across outer rings and holes using STR bbox candidates plus the union of intersected edge bands; midpoint membership, highest-priority billable winner, NO_GO isolation, length-proportional allocation, deterministic rounding, night-window logic, deterministic event/alert IDs, transition/dwell handling, tenant-local safety version changes, event-time clamping and suspect-jump flags. Trip state now has complete immutable checkpoint/restore support.
+- Pipeline: added bounded all-or-nothing admission, platform-thread shard queues, D-10 age/skew validation, bounded reorder buffers, injected-clock gap expiry, duplicate/late classification, exact skipped-range coalescing, trip processor ownership, immutable captured checkpoint retries, durable-frontier advancement after commit, PostgreSQL trip-state codec/load, and a transactional checkpoint repository. V3–V5 migrations create trips, cumulative zone totals, events, alerts and indexes. Checkpoint persistence validates pinned zone membership and writes totals/events/alerts/ack in one transaction.
+- Tests: 61 `zone-core` tests, 28 `zone-service` unit tests, and 5 PostgreSQL Testcontainers integration tests; all passed with zero failures/errors/skips. Coverage includes EX1 at two ping spacings, boundary/vertex/hole/tangent/short-segment cases, seeded batching/conservation, priority billing, DST and no-go alerts, checkpoint identity/retry, out-of-order release, duplicate/late/gap classification, bounded queues, recovery event/alert identity, Micrometer registration, JSON round-trip, migration startup, and actual transactional persistence of totals, events, alerts and durable ack.
+- Verification: `JAVA_HOME=/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home PATH=/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home/bin:$PATH ./mvnw -q clean verify` — exit 0. Docker Desktop 29.9.2, PostgreSQL 18, Apple M2, 8 CPU cores, 16 GB RAM, macOS 26.5.1, OpenJDK 25.0.2. A first sandboxed run could not access Docker's Unix socket; the approved Docker-enabled rerun passed. `git diff --check` and full diff review are recorded before commit.
+- Measurement: no Phase 5 HTTP admission or durable ping throughput benchmark was run. The Phase 3 point-query rate is not representative of either. Phase 9 owns separate admission and commit-throughput measurements.
+- Limitations: skipped intervals are never pruned because doing so would change permanent `LATE` versus `DUPLICATE` semantics. Only overlapping/adjacent intervals coalesce, so metadata can grow with arbitrarily many disjoint gaps; this is explicitly not a bounded-memory claim. Phase 6 will wire these tested pipeline primitives to API trip lifecycle operations and graceful application lifecycle; Phase 8 adds broader operational instrumentation.
+- Acceptance: all Phase 5 behavioral criteria are checked in `08-phase-5-trip-attribution.md`; exact skipped-range metadata remains explicitly unbounded under D-10, with no bounded-memory claim.

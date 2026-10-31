@@ -21,15 +21,15 @@ Reviewed: 2026-10-31. This file records technical clarifications made across the
 
 ## Verification items before implementation
 
-These points are intentionally not guessed. Resolve and record the answer before coding the affected behavior:
+These items were open before implementation. The Phase 2 and Phase 5 resolutions below are recorded; the remaining items must be addressed in their owning phases:
 
-1. **Skipped-range growth:** exact persistent `LATE`/`DUPLICATE` classification requires retaining skipped intervals. Long trips with many disjoint gaps can grow that metadata. Choose and test a retention/compaction/bound policy that preserves D-10 semantics, or propose an explicit decision change; do not claim bounded memory until resolved.
-2. **Geometry tolerance math:** D-03's scaled orientation/collinearity epsilon lacks a dimensionally explicit formula. Verify a formula for the determinant predicate and test near-collinear/large-coordinate cases without changing D-02's closed-set boundary rule.
-3. **Geographic extent limit:** D-04 describes the supported polygon scale as “smaller than ~1,000 km” but does not define the exact measurement/check (diameter, bbox span, or another bound). Select the check and error behavior before implementation.
-4. **Trip employee assignment:** `POST /trips` accepts `employeeId`, while OPERATOR and ADMIN are permitted callers. Confirm whether an OPERATOR may start trips for any same-tenant employee or only a narrower assignment scope. Composite tenant FK validation is mandatory either way.
-5. **Deployment enforcement:** docs require one active instance, but the final Compose/deployment configuration must enforce or clearly constrain replica count. No cross-instance safety may be inferred from a single-node test.
-6. **Temporal database invariants:** composite FKs prove tenant and row ownership, but ordinary FKs cannot prove that a referenced old zone version belongs in a trip's pinned set composition. Enforce and test this in application persistence validation; consider a database trigger only if a stronger DB-only invariant is required.
-7. **STR and edge-band evidence:** worst-case bounds are documented honestly; the measured benchmark suite must include broad overlapping boxes, long edges spanning many bands, and segments crossing many bands. Report the actual candidate/incidence behavior.
+1. **Skipped-range growth (Phase 5):** retain every skipped sequence interval for the trip lifetime and coalesce only overlapping/adjacent intervals. Do not prune or cap the exact set: D-10 requires any sequence in a skipped interval to remain `LATE`, including after restart. This preserves classification but does not guarantee bounded metadata for a trip with arbitrarily many disjoint gaps. The per-trip reorder buffer and shard admission queue are bounded; skipped-range metadata is not. A bounded solution requires a canonical retention horizon or an external lookup policy and is not claimed here.
+2. **Geometry tolerance math (Phase 2):** resolved as D-03's perpendicular-distance threshold `boundaryEpsDeg × hypot(B-A)` for the cross product, with zero-length baselines handled as point distance. This is tested without changing D-02.
+3. **Geographic extent limit (Phase 2):** resolved as maximum haversine distance between the two geographic bounding-box diagonals; reject over 1,000,000 m as `POLYGON_TOO_LARGE`, after antimeridian and pole checks.
+4. **Trip employee assignment:** `POST /trips` accepts same-tenant operator/admin initiation; composite tenant FK validation remains required. Enforce at API, service and persistence layers in Phase 7.
+5. **Deployment enforcement:** Phase 10 must constrain deployment to one replica. This is not a multi-instance fencing protocol.
+6. **Temporal database invariants:** Phase 6 application persistence validation must verify pinned set membership in addition to composite FKs.
+7. **STR and edge-band evidence:** Phase 3 benchmark evidence is recorded in `docs/benchmarks/`; worst-case bounds remain data-dependent.
 
 ## Review scope
 

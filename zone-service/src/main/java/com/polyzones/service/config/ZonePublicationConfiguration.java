@@ -3,7 +3,11 @@ package com.polyzones.service.config;
 import com.polyzones.service.persistence.GeometryCodec;
 import com.polyzones.service.persistence.JdbcSnapshotLoader;
 import com.polyzones.service.persistence.JdbcZoneSetStore;
+import com.polyzones.service.persistence.CheckpointStateCodec;
+import com.polyzones.service.persistence.JdbcTripCheckpointRepository;
+import com.polyzones.service.pipeline.CheckpointRepository;
 import com.polyzones.service.observability.ZoneVersionGaugeRegistry;
+import com.polyzones.service.observability.PipelineMetrics;
 import com.polyzones.service.publish.PinnedSnapshotRegistry;
 import com.polyzones.service.publish.SnapshotRegistry;
 import com.polyzones.service.publish.SnapshotLoader;
@@ -23,6 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration
 public class ZonePublicationConfiguration {
     @Bean public Clock applicationClock() { return Clock.systemUTC(); }
+    @Bean public PipelineMetrics pipelineMetrics(MeterRegistry meters) { return new PipelineMetrics(meters); }
     @Bean public GeometryCodec geometryCodec() { return new GeometryCodec(JsonMapper.builder().build()); }
     @Bean public SnapshotRegistry snapshotRegistry() { return new SnapshotRegistry(); }
     @Bean public ZoneVersionGaugeRegistry zoneVersionGaugeRegistry(MeterRegistry meters,
@@ -35,6 +40,12 @@ public class ZonePublicationConfiguration {
     @Bean public JdbcZoneSetStore jdbcZoneSetStore(JdbcTemplate jdbc, PlatformTransactionManager transactionManager,
                                                     GeometryCodec geometry, JdbcSnapshotLoader loader, Clock clock) {
         return new JdbcZoneSetStore(jdbc, transactionManager, geometry, loader, clock);
+    }
+    @Bean public CheckpointStateCodec checkpointStateCodec() { return new CheckpointStateCodec(JsonMapper.builder().build()); }
+    @Bean public CheckpointRepository jdbcTripCheckpointRepository(JdbcTemplate jdbc,
+                    PlatformTransactionManager transactionManager, CheckpointStateCodec codec,
+                    PinnedSnapshotRegistry snapshots, Clock clock) {
+        return new JdbcTripCheckpointRepository(jdbc, transactionManager, codec, snapshots, clock);
     }
     @Bean public PinnedSnapshotRegistry pinnedSnapshotRegistry(SnapshotRegistry registry, SnapshotLoader loader,
                                                                 @Value("${zones.cache.historical-snapshots-max-vertices:5000000}") long maxVertices) {

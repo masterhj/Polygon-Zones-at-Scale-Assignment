@@ -44,6 +44,8 @@ zones:
   pipeline:
     shards: 0
     queue-capacity: 10000
+    max-ping-age: 24h
+    future-clock-skew: 5m
     reorder-hold-ms: 2000
     reorder-max-buffered: 64
     checkpoint-every-pings: 200

@@ -30,8 +30,10 @@ class ZoneServiceApplicationIT {
         Integer migrations = jdbc.queryForObject("select count(*) from flyway_schema_history where success", Integer.class);
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/health")).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        assertThat(migrations).isEqualTo(2);
+        assertThat(migrations).isEqualTo(5);
         assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='zone_set_versions'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='trips'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='alerts'", Integer.class)).isEqualTo(1);
         assertThat(response.statusCode()).isBetween(200, 299);
         assertThat(response.body()).contains("\"status\":\"UP\"");
     }

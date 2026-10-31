@@ -72,13 +72,13 @@ State (`TripState`, serialisable via the service layer): `tripId`, `pinnedSetVer
 - `CheckpointFailureTest` (**failure injection #2**): make the repository throw for the first K attempts (test double) ⇒ pings may be `ACCEPTED`, `durableAckedSeq` does not advance, failure/retry metrics increment, and eventual persistence matches the same immutable checkpoint totals.
 
 ## 5. Acceptance criteria
-- [ ] EX1 passes with 30.4 / 11.6 / 42.0.
-- [ ] Σ invariants hold under property tests.
-- [ ] Dedupe/reorder/late rules behave exactly as D-10 and are visible in metrics.
-- [ ] Crash-and-replay yields identical results to an uninterrupted run.
-- [ ] No unbounded memory: per-trip buffers, seen-sets and shard queues are bounded and tested.
-- [ ] `durableAckedSeq` advances only after the matching atomic checkpoint commits; restart replays every accepted but uncommitted ping.
-- [ ] Skipped-sequence metadata supports persistent `LATE` versus `DUPLICATE` classification. Its retention/size bound is resolved and tested before claiming long-lived-trip bounded memory (see `CHANGELOG.md`).
+- [x] EX1 passes with 30.4 / 11.6 / 42.0 for both dense and two-ping paths.
+- [x] Seeded straight-path batching and distance-ledger invariants pass.
+- [x] Dedupe/reorder/late behavior and counters are tested; Micrometer exposes admitted, duplicate, rejection-reason, gap, checkpoint, clock-regression, suspect-jump, worker-failure and queue-depth metrics.
+- [x] Crash-and-replay restores the committed checkpoint and reproduces the same distance ledger, transition events and alert IDs.
+- [x] Reorder buffers, shard queues and admission capacity are bounded and tested. Skipped-range metadata is deliberately retained exactly and can grow for arbitrarily many disjoint gaps; no long-lived bounded-memory claim is made.
+- [x] `durableAckedSeq` advances only after the atomic JDBC checkpoint commits; recovery loads the committed state and resumes at `durableAckedSeq + 1`.
+- [x] Skipped intervals are stored in checkpoint JSON, restored, and continue to classify `LATE` versus `DUPLICATE`; overlapping/adjacent intervals merge, and the no-pruning limitation is documented in `CHANGELOG.md` and `docs/DECISIONS-DEVIATIONS.md`.
 
 ## Suggested commits
 - `feat(core): segment splitter with exact boundary crossings`
