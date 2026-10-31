@@ -8,7 +8,7 @@ echo " MoveInSync 2026: Polygon Zones at Scale - Live Demo Script"
 echo "=========================================================="
 echo ""
 
-echo "[1/7] Logging in as ACME tenant ADMIN..."
+echo "[1/8] Logging in as ACME tenant ADMIN..."
 ADMIN_LOGIN=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"tenant":"acme","username":"admin","password":"DemoOnly-ChangeMe-2026"}')
@@ -22,15 +22,20 @@ fi
 echo "✓ Admin token acquired successfully."
 echo ""
 
-echo "[2/7] Logging in as ACME tenant OPERATOR..."
+echo "[2/8] Logging in as ACME tenant OPERATOR and EMPLOYEE..."
 OP_LOGIN=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"tenant":"acme","username":"operator","password":"DemoOnly-ChangeMe-2026"}')
 OP_TOKEN=$(echo "$OP_LOGIN" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
-echo "✓ Operator token acquired successfully."
+
+EMP_LOGIN=$(curl -s -X POST "$BASE_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"tenant":"acme","username":"employee","password":"DemoOnly-ChangeMe-2026"}')
+EMP_TOKEN=$(echo "$EMP_LOGIN" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+echo "✓ Operator and Employee tokens acquired successfully."
 echo ""
 
-echo "[3/7] Validating zone geometry (detecting non-closed ring)..."
+echo "[3/8] Validating zone geometry (detecting unclosed ring rejection)..."
 INVALID_POLY='{"geometry":{"type":"Polygon","coordinates":[[[77.5,12.9],[77.6,12.9],[77.6,13.0],[77.5,13.0]]]}}'
 VALIDATE_RESP=$(curl -s -X POST "$BASE_URL/zones/validate" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -39,7 +44,7 @@ VALIDATE_RESP=$(curl -s -X POST "$BASE_URL/zones/validate" \
 echo "Validation Response (Issues expected): $VALIDATE_RESP"
 echo ""
 
-echo "[4/7] Querying seeded zones at Bengaluru coordinate (77.55, 12.93)..."
+echo "[4/8] Querying seeded zones at Bengaluru coordinate (77.55, 12.93)..."
 QUERY_RESP=$(curl -s -X POST "$BASE_URL/zones/query" \
   -H "Authorization: Bearer $OP_TOKEN" \
   -H "Content-Type: application/json" \
@@ -47,9 +52,8 @@ QUERY_RESP=$(curl -s -X POST "$BASE_URL/zones/query" \
 echo "Spatial Query Response: $QUERY_RESP"
 echo ""
 
-echo "[5/7] Starting a new trip for employee..."
-EMPLOYEE_ID="656d706c-6f79-3365-b000-000000000000"
-# Get employee user id
+echo "[5/8] Starting a new trip pinned to zone set version for employee (812aaf6e-f15f-3cd6-8ec1-f9ae79c945fe)..."
+EMPLOYEE_ID="812aaf6e-f15f-3cd6-8ec1-f9ae79c945fe"
 START_TRIP_RESP=$(curl -s -X POST "$BASE_URL/trips" \
   -H "Authorization: Bearer $OP_TOKEN" \
   -H "Content-Type: application/json" \
@@ -59,18 +63,20 @@ TRIP_ID=$(echo "$START_TRIP_RESP" | grep -o '"tripId":"[^"]*' | cut -d'"' -f4 ||
 echo ""
 
 if [ -n "$TRIP_ID" ]; then
-  echo "[6/7] Streaming trajectory GPS pings for trip $TRIP_ID..."
+  echo "[6/8] Streaming GPS trajectory pings (including sequential and duplicate ping)..."
+  NOW_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   PING_RESP=$(curl -s -X POST "$BASE_URL/trips/$TRIP_ID/pings" \
     -H "Authorization: Bearer $OP_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"pings\":[
-      {\"seq\":0,\"eventTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"lon\":77.42,\"lat\":12.82,\"accuracyMeters\":5.0},
-      {\"seq\":1,\"eventTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"lon\":77.56,\"lat\":12.93,\"accuracyMeters\":5.0}
+      {\"seq\":0,\"eventTime\":\"$NOW_TS\",\"lon\":77.42,\"lat\":12.82,\"accuracyMeters\":5.0},
+      {\"seq\":1,\"eventTime\":\"$NOW_TS\",\"lon\":77.56,\"lat\":12.93,\"accuracyMeters\":5.0},
+      {\"seq\":1,\"eventTime\":\"$NOW_TS\",\"lon\":77.56,\"lat\":12.93,\"accuracyMeters\":5.0}
     ]}")
-  echo "Ping Admission: $PING_RESP"
+  echo "Ping Admission Response (Duplicate handled synchronously): $PING_RESP"
   echo ""
 
-  echo "[7/7] Completing trip and retrieving tariff zone attribution..."
+  echo "[7/8] Completing trip and retrieving tariff zone attribution..."
   COMPLETE_RESP=$(curl -s -X POST "$BASE_URL/trips/$TRIP_ID/complete" \
     -H "Authorization: Bearer $OP_TOKEN")
   echo "Complete Trip: $COMPLETE_RESP"
@@ -79,7 +85,24 @@ if [ -n "$TRIP_ID" ]; then
   ATTR_RESP=$(curl -s -X GET "$BASE_URL/trips/$TRIP_ID/attribution" \
     -H "Authorization: Bearer $OP_TOKEN")
   echo "Attribution Summary: $ATTR_RESP"
+  echo ""
+
+  EVENTS_RESP=$(curl -s -X GET "$BASE_URL/trips/$TRIP_ID/events" \
+    -H "Authorization: Bearer $EMP_TOKEN")
+  echo "Employee Reading Own Trip Events: $EVENTS_RESP"
+  echo ""
 fi
+
+echo "[8/8] Testing Cross-Tenant Security Isolation (Globex user querying Acme trip)..."
+GLOBEX_LOGIN=$(curl -s -X POST "$BASE_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"tenant":"globex","username":"operator","password":"DemoOnly-ChangeMe-2026"}')
+GLOBEX_TOKEN=$(echo "$GLOBEX_LOGIN" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+CROSS_TENANT_RESP=$(curl -s -w "\nHTTP Status: %{http_code}" -X GET "$BASE_URL/trips/$TRIP_ID" \
+  -H "Authorization: Bearer $GLOBEX_TOKEN")
+echo "Cross-Tenant Response (Must be 404 Not Found to prevent data leakage):"
+echo "$CROSS_TENANT_RESP"
 
 echo ""
 echo "=========================================================="
