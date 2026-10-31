@@ -1,18 +1,38 @@
 services:
-  postgres:
+  db:
     image: postgres:18
     environment:
       POSTGRES_DB: zones
       POSTGRES_USER: zones
-      POSTGRES_PASSWORD: zones_dev_only
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-zones_dev_only}
     volumes:
-      - postgres-data:/var/lib/postgresql
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U zones -d zones"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
+  app:
+    build: .
+    # One active replica is required by D-20; do not scale this service horizontally.
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      DB_URL: jdbc:postgresql://db:5432/zones
+      DB_USER: zones
+      DB_PASSWORD: ${DB_PASSWORD:-zones_dev_only}
+      JWT_SECRET: ${JWT_SECRET:-bW92ZWluc3luYy1kZW1vLWFuZC10ZXN0LWtleS1uZXZlci11c2UtaW4tcHJvZHVjdGlvbg==}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-DemoOnly-ChangeMe-2026}
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health/readiness || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
 volumes:
-  postgres-data:
+  pgdata:
