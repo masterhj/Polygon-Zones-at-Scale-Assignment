@@ -9,6 +9,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.databind.json.JsonMapper;
+import com.polyzones.service.web.dto.PolygonDto;
 
 /** The sole GeoJSON text codec used by service persistence. Coordinates are always longitude first. */
 public final class GeometryCodec {
@@ -34,6 +35,23 @@ public final class GeometryCodec {
         List<List<LonLat>> holes = new ArrayList<>();
         for (int i = 1; i < rings.size(); i++) holes.add(readRing(rings.get(i)));
         return PolygonShape.of(outer, holes, GeometryTolerance.DEFAULT);
+    }
+
+    public PolygonDto toDto(PolygonShape shape) {
+        List<List<Double>> outer = dtoRing(shape.outer());
+        List<List<List<Double>>> rings = new ArrayList<>();
+        rings.add(outer);
+        shape.holes().forEach(hole -> rings.add(dtoRing(hole)));
+        return new PolygonDto("Polygon", rings);
+    }
+
+    private static List<List<Double>> dtoRing(com.polyzones.core.shape.Ring ring) {
+        List<List<Double>> result = new ArrayList<>();
+        for (int i = 0; i <= ring.edgeCount(); i++) {
+            LonLat point = ring.vertexAt(i % ring.edgeCount());
+            result.add(List.of(point.lon(), point.lat()));
+        }
+        return List.copyOf(result);
     }
 
     private static List<LonLat> readRing(JsonNode ring) {

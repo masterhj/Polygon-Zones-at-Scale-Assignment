@@ -11,6 +11,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -21,7 +23,8 @@ public final class PingIngestService implements AutoCloseable {
     public record Admission(List<ItemResult> items, long durableAckedSeq) {
         public Admission { items = List.copyOf(items); }
     }
-    private record Envelope(UUID tenantId, Ping ping, BackpressureGuard.Reservation reservation) { }
+    private record Envelope(UUID tenantId, Ping ping, BackpressureGuard.Reservation reservation,
+                            CompletableFuture<Void> barrier) { }
     private final ArrayBlockingQueue<Envelope>[] queues;
     private final Thread[] workers;
     private final BackpressureGuard capacity;
@@ -82,11 +85,11 @@ public final class PingIngestService implements AutoCloseable {
             if (ping == null || !tripId.equals(ping.tripId())) {
                 if (metrics != null) metrics.invalid();
                 results.add(new ItemResult(ping == null ? -1 : ping.seq(), Status.REJECTED_INVALID));
-            } else if (ping.eventTime().isBefore(now.minus(maxAge)) || ping.eventTime().isAfter(now.plus(futureSkew))) {
+            } else if (validateTime(ping, now) == Status.REJECTED_CLOCK_SKEW) {
                 if (metrics != null) metrics.clockSkew();
                 results.add(new ItemResult(ping.seq(), Status.REJECTED_CLOCK_SKEW));
             } else {
-                valid.add(new Envelope(tenantId, ping, null));
+                valid.add(new Envelope(tenantId, ping, null, null));
                 results.add(new ItemResult(ping.seq(), Status.ACCEPTED));
             }
         }
@@ -100,7 +103,7 @@ public final class PingIngestService implements AutoCloseable {
         try {
             for (Envelope envelope : valid) {
                 int shard = Math.floorMod(31 * tenantId.hashCode() + tripId.hashCode(), queues.length);
-                if (!queues[shard].offer(new Envelope(envelope.tenantId(), envelope.ping(), reservation)))
+                if (!queues[shard].offer(new Envelope(envelope.tenantId(), envelope.ping(), reservation, null)))
                     throw new IllegalStateException("Reserved shard queue capacity was unavailable");
             }
             if (metrics != null) metrics.admitted(valid.size());
@@ -112,11 +115,43 @@ public final class PingIngestService implements AutoCloseable {
         return new Admission(results, durableFrontier);
     }
 
+    /** Read-only timestamp check used before sequence reservation by the HTTP admission layer. */
+    public Status validateTime(Ping ping) {
+        if (ping == null) return Status.REJECTED_INVALID;
+        return validateTime(ping, clock.instant());
+    }
+
+    private Status validateTime(Ping ping, java.time.Instant now) {
+        return ping.eventTime().isBefore(now.minus(maxAge)) || ping.eventTime().isAfter(now.plus(futureSkew))
+                ? Status.REJECTED_CLOCK_SKEW : Status.ACCEPTED;
+    }
+
+    /** Waits until all previously admitted pings for this trip have left its ordered shard. */
+    public void flushTrip(UUID tenantId, UUID tripId, Duration timeout) {
+        if (tenantId == null || tripId == null || timeout == null || timeout.isNegative() || timeout.isZero())
+            throw new IllegalArgumentException("Invalid trip flush request");
+        int shard = Math.floorMod(31 * tenantId.hashCode() + tripId.hashCode(), queues.length);
+        CompletableFuture<Void> barrier = new CompletableFuture<>();
+        try {
+            if (!queues[shard].offer(new Envelope(tenantId, null, null, barrier), timeout.toNanos(), TimeUnit.NANOSECONDS))
+                throw new BackpressureException();
+            barrier.get(timeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Trip drain was interrupted", interrupted);
+        } catch (java.util.concurrent.TimeoutException timeoutFailure) {
+            throw new BackpressureException();
+        } catch (ExecutionException failure) {
+            throw new IllegalStateException("Trip drain failed", failure.getCause());
+        }
+    }
+
     private void consume(int shard) {
         while (accepting || !queues[shard].isEmpty()) {
             try {
                 Envelope envelope = queues[shard].poll(100, TimeUnit.MILLISECONDS);
                 if (envelope == null) continue;
+                if (envelope.barrier() != null) { envelope.barrier().complete(null); continue; }
                 if (metrics != null) metrics.queued(-1);
                 try { processor.accept(envelope.tenantId(), envelope.ping()); }
                 catch (RuntimeException failure) {
@@ -152,7 +187,7 @@ public final class PingIngestService implements AutoCloseable {
         for (var queue : queues) {
             Envelope pending;
             while ((pending = queue.poll()) != null) {
-                pending.reservation().releaseOne();
+                if (pending.reservation() != null) pending.reservation().releaseOne();
                 if (metrics != null) metrics.queued(-1);
             }
         }

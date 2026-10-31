@@ -23,5 +23,13 @@ class SnapshotBuilderTest {
         assertThat(snapshot.zoneAt(0).id()).isEqualTo(a.id()); assertThat(snapshot.builtAt()).isEqualTo(now);
         assertThat(snapshot.ordinalById().get(b.id())).isEqualTo(1); assertThat(snapshot.buildStats().vertexCount()).isEqualTo(8);
     }
+    @Test void indexFactoryCanSelectTheIndependentNaiveImplementation() {
+        Zone zone = zone("00000000-0000-0000-0000-000000000003");
+        ZoneSnapshot snapshot = SnapshotBuilder.build(UUID.randomUUID(), 1, List.of(zone), GeometryTolerance.DEFAULT,
+                Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), 16,
+                (zones, tolerance, capacity) -> new NaiveZoneIndex(zones, tolerance));
+        assertThat(snapshot.index()).isInstanceOf(NaiveZoneIndex.class);
+        assertThat(snapshot.index().query(.0005, .0005)).hasSize(1);
+    }
     private static Zone zone(String id) { return new Zone(new ZoneKey(UUID.fromString(id)),1,ZoneType.CITY,0,PolygonShape.of(List.of(new LonLat(0,0),new LonLat(.001,0),new LonLat(.001,.001),new LonLat(0,.001),new LonLat(0,0)),List.of(),GeometryTolerance.DEFAULT)); }
 }

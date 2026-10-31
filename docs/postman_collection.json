@@ -1,0 +1,40 @@
+{
+  "info": {
+    "name": "Polygon Zones at Scale API v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Tenant-scoped API examples. Login/JWT issuance is delivered in Phase 7."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "zoneId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "tripId", "value": "00000000-0000-0000-0000-000000000002" },
+    { "key": "alertId", "value": "00000000-0000-0000-0000-000000000003" },
+    { "key": "employeeId", "value": "00000000-0000-0000-0000-000000000004" }
+  ],
+  "item": [
+    { "name": "Login", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/auth/login", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"tenant\":\"acme\",\"username\":\"operator\",\"password\":\"{{demoPassword}}\"}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Validate zone", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/zones/validate", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"zoneId\":null,\"type\":\"CITY\",\"priority\":10,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[77,12],[77.01,12],[77.01,12.01],[77,12.01],[77,12]]]}}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Create zone", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/zones", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Idempotency-Key", "value": "demo-zone-create-1" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"zoneId\":\"{{zoneId}}\",\"type\":\"CITY\",\"priority\":10,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[77,12],[77.01,12],[77.01,12.01],[77,12.01],[77,12]]]}}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Update zone", "request": { "method": "PUT", "url": "{{baseUrl}}/api/v1/zones/{{zoneId}}", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Idempotency-Key", "value": "demo-zone-update-1" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"zoneId\":\"{{zoneId}}\",\"type\":\"CITY\",\"priority\":10,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[77,12],[77.02,12],[77.02,12.01],[77,12.01],[77,12]]]}}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Delete zone", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/zones/{{zoneId}}", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Idempotency-Key", "value": "demo-zone-delete-1" }] } },
+    { "name": "List zones", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/zones?page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "List zones at version", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/zones?setVersion=1&page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Read zone", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/zones/{{zoneId}}?version=1", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Zone versions", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/zones/{{zoneId}}/versions?page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Zone sets", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/zone-sets?page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Query point", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/zones/query", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"lat\":12.005,\"lon\":77.005}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Query historical point", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/zones/query", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"lat\":12.005,\"lon\":77.005,\"asOfSetVersion\":1}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Query batch", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/zones/query/batch", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "[{\"lat\":12.005,\"lon\":77.005},{\"lat\":12.006,\"lon\":77.006}]", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Start trip", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/trips", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"employeeId\":\"{{employeeId}}\",\"startTime\":\"2026-10-31T10:00:00Z\"}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Post pings", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/trips/{{tripId}}/pings", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"pings\":[{\"seq\":0,\"eventTime\":\"2026-10-31T10:00:01Z\",\"lat\":12.005,\"lon\":77.002},{\"seq\":1,\"eventTime\":\"2026-10-31T10:00:05Z\",\"lat\":12.005,\"lon\":77.008}]}", "options": { "raw": { "language": "json" } } } } },
+    { "name": "Complete trip", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/trips/{{tripId}}/complete", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Get trip", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/trips/{{tripId}}", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Trip attribution", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/trips/{{tripId}}/attribution", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Trip events", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/trips/{{tripId}}/events?page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "List alerts", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/alerts?page=0&size=50", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Acknowledge alert", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/alerts/{{alertId}}/ack", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }] } },
+    { "name": "Live health", "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health/liveness" } },
+    { "name": "Ready health", "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health/readiness" } }
+  ]
+}

@@ -7,9 +7,12 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 /** Repairs interrupted builds and reconstructs every tenant's latest durable snapshot before readiness. */
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public final class StartupSnapshotLoader implements ApplicationRunner {
     private final JdbcTemplate jdbc;
     private final SnapshotLoader loader;

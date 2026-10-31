@@ -12,6 +12,11 @@ spring:
     hikari:
       maximum-pool-size: 20
       connection-timeout: 2000
+      validation-timeout: 1000
+      data-source-properties:
+        connectTimeout: 3
+        socketTimeout: 10
+        options: -c statement_timeout=5000
   jpa:
     open-in-view: false
     hibernate:
@@ -21,6 +26,15 @@ spring:
 server:
   shutdown: graceful
   port: 8080
+  max-http-request-header-size: 16KB
+  tomcat:
+    max-swallow-size: 10MB
+    max-http-form-post-size: 10MB
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
 management:
   server:
     port: 8081
@@ -37,6 +51,8 @@ logging:
     format:
       console: ecs
 zones:
+  http:
+    max-json-bytes: 10485760
   geometry:
     boundary-epsilon-deg: 1.0e-9
     max-vertices: 50000

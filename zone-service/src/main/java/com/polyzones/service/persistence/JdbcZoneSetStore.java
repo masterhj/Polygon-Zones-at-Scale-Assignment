@@ -48,6 +48,15 @@ public final class JdbcZoneSetStore implements ZoneSetStore {
             Long next = jdbc.query("select next_zone_set_version from tenants where id=? for update",
                     rs -> rs.next() ? rs.getLong(1) : null, tenantId);
             if (next == null) throw new IllegalArgumentException("Tenant not found");
+            if (command.createOnly()) {
+                for (Zone zone : command.upserts()) {
+                    Integer exists = jdbc.query("select 1 from zone_versions zv join zone_set_versions zsv "
+                                    + "on zsv.tenant_id=zv.tenant_id and zsv.version=zv.set_version "
+                                    + "where zv.tenant_id=? and zv.zone_id=? and zsv.status='PUBLISHED' limit 1",
+                            rs -> rs.next() ? 1 : null, tenantId, zone.id().value());
+                    if (exists != null) throw new ZoneAlreadyExistsException();
+                }
+            }
             Long max = jdbc.queryForObject("select coalesce(max(version),0) from zone_set_versions where tenant_id=?", Long.class, tenantId);
             long version = Math.max(next, (max == null ? 0L : max) + 1L);
             jdbc.update("update tenants set next_zone_set_version=? where id=?", Math.addExact(version, 1L), tenantId);
@@ -126,5 +135,9 @@ public final class JdbcZoneSetStore implements ZoneSetStore {
     public static final class IdempotencyConflictException extends RuntimeException {
         private static final long serialVersionUID = 1L;
         public IdempotencyConflictException() { super("Idempotency key was already used with another request"); }
+    }
+    public static final class ZoneAlreadyExistsException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        public ZoneAlreadyExistsException() { super("Zone already exists"); }
     }
 }

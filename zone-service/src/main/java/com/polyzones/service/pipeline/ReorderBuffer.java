@@ -69,6 +69,15 @@ public final class ReorderBuffer {
         return new Offer(Disposition.READY, ready, gap);
     }
 
+    /** Read-only admission classification; it does not advance the sequence frontier. */
+    public synchronized Disposition classify(long seq) {
+        if (seq < 0) return Disposition.FULL;
+        if (exhausted || seq < nextSeq) return isSkipped(seq) ? Disposition.LATE : Disposition.DUPLICATE;
+        if (buffered.containsKey(seq)) return Disposition.DUPLICATE;
+        if (seq > nextSeq && buffered.size() >= maxBuffered) return Disposition.FULL;
+        return Disposition.READY;
+    }
+
     private void drain(List<Ping> ready) {
         while (true) {
             Pending next = buffered.remove(nextSeq);

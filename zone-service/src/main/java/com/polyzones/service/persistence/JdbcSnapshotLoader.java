@@ -2,6 +2,9 @@ package com.polyzones.service.persistence;
 
 import com.polyzones.core.index.SnapshotBuilder;
 import com.polyzones.core.index.ZoneSnapshot;
+import com.polyzones.core.index.ZoneIndexFactory;
+import com.polyzones.core.index.RTreeZoneIndex;
+import com.polyzones.core.geo.GeometryTolerance;
 import com.polyzones.core.shape.PolygonShape;
 import com.polyzones.core.zone.Zone;
 import com.polyzones.core.zone.ZoneKey;
@@ -9,6 +12,7 @@ import com.polyzones.core.zone.ZoneType;
 import com.polyzones.service.publish.SnapshotLoader;
 import com.polyzones.service.publish.PinnedSnapshotRegistry;
 import java.util.List;
+import java.time.Clock;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -27,8 +31,12 @@ public final class JdbcSnapshotLoader implements SnapshotLoader {
     private static final String BUILDING_VERSION = "select 1 from zone_set_versions where tenant_id=? and version=? and status='BUILDING'";
     private final JdbcTemplate jdbc;
     private final GeometryCodec geometry;
+    private final ZoneIndexFactory indexes;
+    private final Clock clock;
 
-    public JdbcSnapshotLoader(JdbcTemplate jdbc, GeometryCodec geometry) { this.jdbc = jdbc; this.geometry = geometry; }
+    public JdbcSnapshotLoader(JdbcTemplate jdbc, GeometryCodec geometry, ZoneIndexFactory indexes, Clock clock) {
+        this.jdbc = jdbc; this.geometry = geometry; this.indexes = indexes; this.clock = clock;
+    }
 
     @Override public ZoneSnapshot loadPublished(UUID tenantId, long setVersion) {
         if (!exists(PUBLISHED_VERSION, tenantId, setVersion)) throw new PinnedSnapshotRegistry.VersionNotFoundException();
@@ -50,6 +58,7 @@ public final class JdbcSnapshotLoader implements SnapshotLoader {
             return new Zone(new ZoneKey(rs.getObject("zone_id", UUID.class)), rs.getInt("version"),
                     ZoneType.valueOf(rs.getString("zone_type")), rs.getInt("priority"), shape);
         }, tenant, version, version);
-        return SnapshotBuilder.build(tenant, version, zones);
+        return SnapshotBuilder.build(tenant, version, zones, GeometryTolerance.DEFAULT, clock,
+                RTreeZoneIndex.DEFAULT_NODE_CAPACITY, indexes);
     }
 }

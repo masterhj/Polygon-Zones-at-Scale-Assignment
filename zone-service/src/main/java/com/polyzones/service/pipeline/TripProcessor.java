@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 /** Single-shard owner of one trip's sequence buffer, attribution state and checkpoint frontier. */
 public final class TripProcessor {
     public enum Status { PROCESSED, BUFFERED, DUPLICATE, LATE, BUFFER_FULL }
+    public enum SequenceDecision { ACCEPT, DUPLICATE, LATE, INVALID }
     public record Outcome(Status status, List<ProcessResult> applied, long durableAckedSeq) {
         public Outcome { applied = List.copyOf(applied); }
     }
@@ -71,13 +72,11 @@ public final class TripProcessor {
         if (checkpointer.hasPending()) throw new CheckpointBacklogException();
         ReorderBuffer.Offer offer = reorder.offer(ping);
         if (offer.disposition() == ReorderBuffer.Disposition.DUPLICATE) {
-            state.addDuplicatePing();
-            if (metrics != null) metrics.duplicate();
+            recordDuplicate();
             return new Outcome(Status.DUPLICATE, List.of(), state.durableAckedSeq());
         }
         if (offer.disposition() == ReorderBuffer.Disposition.LATE) {
-            state.addLatePing();
-            if (metrics != null) metrics.late();
+            recordLate();
             return new Outcome(Status.LATE, List.of(), state.durableAckedSeq());
         }
         if (offer.disposition() == ReorderBuffer.Disposition.FULL)
@@ -87,6 +86,18 @@ public final class TripProcessor {
         return processOffer(offer);
     }
 
+    public synchronized SequenceDecision classifySequence(long seq) {
+        if (seq < 0) return SequenceDecision.INVALID;
+        return switch (reorder.classify(seq)) {
+            case DUPLICATE -> SequenceDecision.DUPLICATE;
+            case LATE -> SequenceDecision.LATE;
+            case READY, BUFFERED -> SequenceDecision.ACCEPT;
+            case FULL -> SequenceDecision.INVALID;
+        };
+    }
+
+    public synchronized void recordDuplicate() { state.addDuplicatePing(); if (metrics != null) metrics.duplicate(); }
+    public synchronized void recordLate() { state.addLatePing(); if (metrics != null) metrics.late(); }
     public synchronized Outcome tick() {
         if (checkpointer.hasPending()) {
             boolean recovered = checkpointer.retryPending(state);
@@ -161,7 +172,7 @@ public final class TripProcessor {
         reportedCheckpointFailures = failures;
     }
 
-    public long durableAckedSeq() { return state.durableAckedSeq(); }
+    public synchronized long durableAckedSeq() { return state.durableAckedSeq(); }
     public int bufferedCount() { return reorder.bufferedCount(); }
     public long checkpointFailures() { return checkpointer.failures(); }
     public long latePings() { return state.latePings(); }

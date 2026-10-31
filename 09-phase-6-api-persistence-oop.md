@@ -50,10 +50,10 @@
 - `ApiErrorShapeTest`, `ArchitectureTest`, `MapperTest`.
 
 ## 8. Acceptance criteria
-- [ ] All endpoints in file 03 implemented with the documented roles/status codes.
-- [ ] ArchUnit layering + repository-tenant-parameter rules pass.
-- [ ] Error bodies are uniform ProblemDetail and leak nothing (test proves it).
-- [ ] `docs/api.http` runs end-to-end against `docker compose up`.
+- [ ] All endpoints in file 03 implemented with the documented roles/status codes. Zone/query/trip/alert routes are implemented; `/auth/login` and role enforcement are Phase 7 acceptance.
+- [x] ArchUnit layering + repository-tenant-parameter rules pass.
+- [x] Error bodies use a uniform ProblemDetail envelope and the tested categories do not leak internal details.
+- [ ] `docs/api.http` runs end-to-end against `docker compose up`. This requires Phase 7 JWT and Phase 10 Compose service wiring.
 
 ## Suggested commits
 - `feat(persistence): flyway schema, entities, tenant-scoped repositories, geometry codec`

@@ -32,6 +32,14 @@ The service pipeline provides bounded all-or-nothing ping admission, single-writ
 
 No HTTP ping-admission or end-to-end durable-processing throughput has been measured yet. The Phase 3 point-query figures above do not measure either workload. Phase 9 owns those measurements and will report them separately.
 
+## Phase 6 — API and persistence
+
+The Spring service now exposes tenant-scoped zone administration and historical reads, single/batch point queries, trip lifecycle and ping admission, attribution/events, and alert list/acknowledgment under `/api/v1`. The OpenAPI-style request examples are in [api.http](docs/api.http), and [postman_collection.json](docs/postman_collection.json) contains the same flows. Request and response DTOs are records; geometry conversion stays in `GeometryCodec`; PostgreSQL remains the durable source for edits and trip checkpoints. The service uses Hibernate 7 entity mappings with `ddl-auto=validate` while existing high-contention publication and checkpoint writes retain their short, explicit JDBC transactions.
+
+HTTP requests have a **10 MiB** JSON body cap, **16 KiB** request-header cap, and Tomcat max-swallow size of **10 MiB**. The Hikari pool defaults to **20** connections to bound concurrent database work independently of ping shard count; acquisition times out after **2 seconds**, PostgreSQL statement execution after **5 seconds**, connection establishment after **3 seconds**, and socket reads after **10 seconds**. These limits are service defaults, not a throughput claim. Error responses use curated RFC 9457 Problem Details with a validated/generated `X-Request-Id`; server-generated diagnostic detail is not returned to clients.
+
+The HTTP routes and database behavior are covered by Testcontainers integration tests, including create/idempotent replay, validation, historical queries, batch queries, tenant isolation, trip checkpoint completion, and exact duplicate/late ping classification. JWT login and role enforcement are implemented in Phase 7; the Compose-based end-to-end demo is implemented in Phase 10. Until those phases are complete, `docs/api.http` requires the test or externally supplied bearer-token setup described in the collection.
+
 ## Phase 3 — spatial index and measured point queries
 
 `zone-core` now builds immutable STR-packed R-trees in private flat primitive arrays. `forEachContaining` reuses a per-thread traversal stack after initialization; the separate list-returning `query` allocates its results. A linear `NaiveZoneIndex` scans exact polygon geometry without the R-tree bbox shortcut and serves as an independent oracle. Tests compare complete sorted `ZoneHit` results over 50 fixed-seed scenarios × 100,000 points, plus node-capacity, boundary, hole, candidate-range, reentrancy and 16-reader cases.

@@ -1,0 +1,123 @@
+### Set the service URL and a Phase 7 JWT access token.
+@baseUrl = http://localhost:8080
+@token = {{accessToken}}
+@zoneId = 00000000-0000-0000-0000-000000000001
+@tripId = 00000000-0000-0000-0000-000000000002
+@alertId = 00000000-0000-0000-0000-000000000003
+@employeeId = 00000000-0000-0000-0000-000000000004
+
+### Public login (implemented with Phase 7 JWT security)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{"tenant":"acme","username":"operator","password":"{{demoPassword}}"}
+
+### Validate a polygon (ADMIN)
+POST {{baseUrl}}/api/v1/zones/validate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"zoneId":null,"type":"CITY","priority":10,"geometry":{"type":"Polygon","coordinates":[[[77.0,12.0],[77.01,12.0],[77.01,12.01],[77.0,12.01],[77.0,12.0]]]}}
+
+### Create a zone (ADMIN)
+POST {{baseUrl}}/api/v1/zones
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-city-create-1
+Content-Type: application/json
+
+{"zoneId":"{{zoneId}}","type":"CITY","priority":10,"geometry":{"type":"Polygon","coordinates":[[[77.0,12.0],[77.01,12.0],[77.01,12.01],[77.0,12.01],[77.0,12.0]]]}}
+
+### Update a zone (ADMIN)
+PUT {{baseUrl}}/api/v1/zones/{{zoneId}}
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-city-update-1
+Content-Type: application/json
+
+{"zoneId":"{{zoneId}}","type":"CITY","priority":10,"geometry":{"type":"Polygon","coordinates":[[[77.0,12.0],[77.02,12.0],[77.02,12.01],[77.0,12.01],[77.0,12.0]]]}}
+
+### Delete a zone (ADMIN)
+DELETE {{baseUrl}}/api/v1/zones/{{zoneId}}
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-city-delete-1
+
+### List zones (tenant-scoped; pagination size <= 200)
+GET {{baseUrl}}/api/v1/zones?page=0&size=50
+Authorization: Bearer {{token}}
+
+### List zones at a published set version
+GET {{baseUrl}}/api/v1/zones?setVersion=1&page=0&size=50
+Authorization: Bearer {{token}}
+
+### Read one zone version
+GET {{baseUrl}}/api/v1/zones/{{zoneId}}?version=1
+Authorization: Bearer {{token}}
+
+### Read zone version history (ADMIN, OPERATOR)
+GET {{baseUrl}}/api/v1/zones/{{zoneId}}/versions?page=0&size=50
+Authorization: Bearer {{token}}
+
+### Read zone-set history (ADMIN, OPERATOR)
+GET {{baseUrl}}/api/v1/zone-sets?page=0&size=50
+Authorization: Bearer {{token}}
+
+### Query one point (ADMIN, OPERATOR)
+POST {{baseUrl}}/api/v1/zones/query
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"lat":12.005,"lon":77.005}
+
+### Query one point at a pinned historical version
+POST {{baseUrl}}/api/v1/zones/query
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"lat":12.005,"lon":77.005,"asOfSetVersion":1}
+
+### Query a batch of points using one snapshot (up to 1,000)
+POST {{baseUrl}}/api/v1/zones/query/batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[{"lat":12.005,"lon":77.005},{"lat":12.006,"lon":77.006}]
+
+### Start a trip (OPERATOR, ADMIN)
+POST {{baseUrl}}/api/v1/trips
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"employeeId":"{{employeeId}}","startTime":"2026-10-31T10:00:00Z"}
+
+### Admit a batch of pings (OPERATOR; up to 500)
+POST {{baseUrl}}/api/v1/trips/{{tripId}}/pings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"pings":[{"seq":0,"eventTime":"2026-10-31T10:00:01Z","lat":12.005,"lon":77.002,"accuracyMeters":5},{"seq":1,"eventTime":"2026-10-31T10:00:05Z","lat":12.005,"lon":77.008,"accuracyMeters":5}]}
+
+### Complete a trip (OPERATOR, ADMIN)
+POST {{baseUrl}}/api/v1/trips/{{tripId}}/complete
+Authorization: Bearer {{token}}
+
+### Read trip, attribution, and events
+GET {{baseUrl}}/api/v1/trips/{{tripId}}
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/api/v1/trips/{{tripId}}/attribution
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/api/v1/trips/{{tripId}}/events?page=0&size=50
+Authorization: Bearer {{token}}
+
+### List alerts (ADMIN, OPERATOR)
+GET {{baseUrl}}/api/v1/alerts?page=0&size=50
+Authorization: Bearer {{token}}
+
+### Acknowledge an alert (ADMIN, OPERATOR)
+POST {{baseUrl}}/api/v1/alerts/{{alertId}}/ack
+Authorization: Bearer {{token}}
+
+### Public health probes
+GET {{baseUrl}}/actuator/health/liveness
+
+GET {{baseUrl}}/actuator/health/readiness
