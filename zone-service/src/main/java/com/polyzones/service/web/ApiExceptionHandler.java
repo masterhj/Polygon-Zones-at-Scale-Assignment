@@ -4,6 +4,7 @@ import com.polyzones.service.pipeline.PingIngestService;
 import com.polyzones.service.pipeline.TripProcessor;
 import com.polyzones.service.publish.PinnedSnapshotRegistry;
 import com.polyzones.service.application.ApplicationException;
+import com.polyzones.service.application.AuthService;
 import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -31,6 +32,8 @@ public final class ApiExceptionHandler {
         HttpStatus status = switch (failure.code()) {
             case "ZONE_NOT_FOUND", "TRIP_NOT_FOUND", "VERSION_NOT_FOUND", "EMPLOYEE_NOT_FOUND", "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "IDEMPOTENCY_CONFLICT", "CONFLICT", "TRIP_COMPLETED" -> HttpStatus.CONFLICT;
+            case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
+            case "INVALID_CREDENTIALS" -> HttpStatus.UNAUTHORIZED;
             case "PUBLISH_FAILED" -> HttpStatus.INTERNAL_SERVER_ERROR;
             case "ZONE_SET_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             default -> HttpStatus.BAD_REQUEST;
@@ -60,6 +63,16 @@ public final class ApiExceptionHandler {
     @ExceptionHandler(PayloadTooLargeException.class)
     ResponseEntity<ProblemDetail> payloadTooLarge(PayloadTooLargeException failure, HttpServletRequest request) {
         return response(HttpStatus.PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", "The request body exceeds the configured size limit.", request);
+    }
+
+    @ExceptionHandler(AuthService.LoginRateLimitException.class)
+    ResponseEntity<ProblemDetail> loginRateLimit(AuthService.LoginRateLimitException failure, HttpServletRequest request) {
+        return response(HttpStatus.TOO_MANY_REQUESTS, "LOGIN_THROTTLED", "Too many login attempts. Try again later.", request);
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    ResponseEntity<ProblemDetail> forbidden(org.springframework.security.access.AccessDeniedException failure, HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "You are not permitted to perform this operation.", request);
     }
 
     private static boolean causedByPayloadLimit(Throwable failure) {
@@ -92,6 +105,7 @@ public final class ApiExceptionHandler {
     private static ResponseEntity<ProblemDetail> response(HttpStatus status, String code, String detail, HttpServletRequest request) {
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(status);
         if (status == HttpStatus.UNAUTHORIZED) builder.header(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+        if (status == HttpStatus.TOO_MANY_REQUESTS) builder.header(HttpHeaders.RETRY_AFTER, "300");
         return builder.body(problem(status, code, detail, request));
     }
 

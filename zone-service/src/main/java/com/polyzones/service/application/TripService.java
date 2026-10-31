@@ -20,9 +20,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Service
-public final class TripService {
+public class TripService {
     private final JdbcTemplate jdbc;
     private final SnapshotRegistry snapshots;
     private final TripExecutionRegistry executions;
@@ -37,6 +38,7 @@ public final class TripService {
         this.clock = clock; this.mapper = mapper; this.transactions = new TransactionTemplate(transactionManager);
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public TripResponse start(TripStartRequest request) {
         UUID tenant = TenantContext.requireTenantId();
         UUID tripId = request.tripId() == null ? UUID.randomUUID() : request.tripId();
@@ -58,6 +60,7 @@ public final class TripService {
         return get(tenant, tripId);
     }
 
+    @PreAuthorize("hasRole('OPERATOR')")
     public PingAdmissionResponse pings(UUID tripId, PingRequest request) {
         UUID tenant = TenantContext.requireTenantId();
         return executions.serialized(() -> {
@@ -102,6 +105,7 @@ public final class TripService {
         });
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public TripResponse complete(UUID tripId) {
         UUID tenant = TenantContext.requireTenantId();
         return executions.serialized(() -> {
@@ -112,11 +116,18 @@ public final class TripService {
         });
     }
 
-    public TripResponse get(UUID tripId) { return get(TenantContext.requireTenantId(), tripId); }
+    @PreAuthorize("hasAnyRole('EMPLOYEE','OPERATOR','ADMIN')")
+    public TripResponse get(UUID tripId) {
+        TripResponse trip = get(TenantContext.requireTenantId(), tripId);
+        requireEmployeeOwnership(trip);
+        return trip;
+    }
 
+    @PreAuthorize("hasAnyRole('EMPLOYEE','OPERATOR','ADMIN')")
     public TripAttributionResponse attribution(UUID tripId) {
         UUID tenant = TenantContext.requireTenantId();
         TripResponse trip = get(tenant, tripId);
+        requireEmployeeOwnership(trip);
         Map<String, Double> meters = jdbc.query("select zone_id,meters from trip_zone_distance where tenant_id=? and trip_id=?",
                 rs -> { Map<String, Double> result = new java.util.TreeMap<>(); while (rs.next()) result.put(rs.getObject(1, UUID.class).toString(), rs.getDouble(2)); return result; }, tenant, tripId);
         Double unzoned = jdbc.query("select unzoned_meters from trips where tenant_id=? and trip_id=?",
@@ -127,10 +138,11 @@ public final class TripService {
         return new TripAttributionResponse(meters, total, allocation.kilometersByKey(), allocation.roundedTotalKilometers(), "HAVERSINE_SEGMENT_SPLIT", trip.pinnedSetVersion());
     }
 
+    @PreAuthorize("hasAnyRole('EMPLOYEE','OPERATOR','ADMIN')")
     public List<TripEventResponse> events(UUID tripId, int page, int size) {
         validatePage(page, size);
         UUID tenant = TenantContext.requireTenantId();
-        get(tenant, tripId);
+        requireEmployeeOwnership(get(tenant, tripId));
         return jdbc.query("select event_id,zone_id,zone_version,zone_version_set_version,evaluated_set_version,transition_ordinal,kind,event_time,dwell_seconds,reason from zone_events where tenant_id=? and trip_id=? order by transition_ordinal limit ? offset ?",
                 (rs, row) -> new TripEventResponse(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getInt(3), rs.getLong(4),
                         rs.getLong(5), rs.getLong(6), rs.getString(7), rs.getTimestamp(8).toInstant(),
@@ -147,4 +159,8 @@ public final class TripService {
     }
 
     private static void validatePage(int page, int size) { if (page < 0 || size < 1 || size > 200) throw new ApplicationException("VALIDATION_FAILED", "Pagination must use a non-negative page and size from 1 to 200."); }
+    private static void requireEmployeeOwnership(TripResponse trip) {
+        if (TenantContext.hasRole("EMPLOYEE") && !trip.employeeId().equals(TenantContext.currentUserId()))
+            throw new ApplicationException("FORBIDDEN", "You are not permitted to read this trip.");
+    }
 }

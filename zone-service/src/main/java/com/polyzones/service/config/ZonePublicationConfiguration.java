@@ -35,13 +35,22 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration
 public class ZonePublicationConfiguration {
     @Bean public Clock applicationClock() { return Clock.systemUTC(); }
+    @Bean public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+    @Bean public com.polyzones.service.security.LoginThrottle loginThrottle(Clock clock,
+            @Value("${security.login.failure-limit:5}") int failureLimit,
+            @Value("${security.login.window:5m}") java.time.Duration window,
+            @Value("${security.login.max-keys:100000}") long maxKeys) {
+        return new com.polyzones.service.security.LoginThrottle(clock, failureLimit, window, maxKeys);
+    }
     @Bean public PipelineMetrics pipelineMetrics(MeterRegistry meters) { return new PipelineMetrics(meters); }
     @Bean public GeometryCodec geometryCodec() { return new GeometryCodec(JsonMapper.builder().build()); }
     @Bean public ZoneMapper zoneMapper(GeometryCodec geometry) { return new ZoneMapper(geometry); }
     @Bean public TripMapper tripMapper() { return new TripMapper(); }
     @Bean public SnapshotRegistry snapshotRegistry() { return new SnapshotRegistry(); }
     @Bean public ZoneVersionGaugeRegistry zoneVersionGaugeRegistry(MeterRegistry meters,
-                    @Value("${zones.metrics.max-tenant-tags:1000}") int tenantGaugeCap) {
+                    @Value("${zones.metrics.max-tenant-tags:50}") int tenantGaugeCap) {
         return new ZoneVersionGaugeRegistry(meters, tenantGaugeCap);
     }
     @Bean public ZoneIndexFactory zoneIndexFactory(@Value("${zones.index.strategy:rtree}") String strategy) {

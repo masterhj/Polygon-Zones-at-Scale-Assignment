@@ -62,7 +62,8 @@ public final class JdbcZoneSetStore implements ZoneSetStore {
             jdbc.update("update tenants set next_zone_set_version=? where id=?", Math.addExact(version, 1L), tenantId);
             try {
                 jdbc.update("insert into zone_set_versions(tenant_id,version,status,idempotency_key,request_hash) values (?,?,'BUILDING',?,?)",
-                        tenantId, version, command.idempotencyKey(), command.bodyHash());
+                        tenantId, version, command.idempotencyKey(),
+                        command.idempotencyKey() == null ? null : command.bodyHash());
             } catch (DuplicateKeyException duplicate) {
                 throw new IdempotencyConflictException();
             }

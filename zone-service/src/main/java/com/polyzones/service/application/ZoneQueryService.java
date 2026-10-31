@@ -13,10 +13,11 @@ import java.util.UUID;
 import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.sql.Timestamp;
 
 @Service
-public final class ZoneQueryService {
+public class ZoneQueryService {
     private final SnapshotRegistry latest;
     private final PinnedSnapshotRegistry history;
     private final ZoneMapper mapper;
@@ -25,6 +26,7 @@ public final class ZoneQueryService {
         this.latest = latest; this.history = history; this.mapper = mapper; this.jdbc = jdbc;
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN') or (hasRole('EMPLOYEE') and #p0 == null)")
     public List<ZoneResponse> list(Long setVersion, int page, int size) {
         validatePage(page, size);
         UUID tenant = TenantContext.requireTenantId();
@@ -32,6 +34,7 @@ public final class ZoneQueryService {
                 .skip((long) page * size).limit(size).map(zone -> mapper.toResponse(snapshot, zone)).toList());
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN') or (hasRole('EMPLOYEE') and #p1 == null)")
     public ZoneResponse get(UUID zoneId, Integer version) {
         UUID tenant = TenantContext.requireTenantId();
         Long setVersion = version == null ? null : jdbc.query("select set_version from zone_versions where tenant_id=? and zone_id=? and version=? and deleted=false",
@@ -46,19 +49,25 @@ public final class ZoneQueryService {
         });
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public PointQueryResponse query(double lat, double lon, Long setVersion) {
         return withSnapshot(TenantContext.requireTenantId(), setVersion,
                 snapshot -> new PointQueryResponse(snapshot.setVersion(), snapshot.index().query(lon, lat).stream().map(ZoneQueryService::hit).toList()));
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public List<com.polyzones.service.web.dto.ZoneVersionSummary> versions(java.util.UUID zoneId, int page, int size) {
         validatePage(page, size);
         UUID tenant = TenantContext.requireTenantId();
+        Integer exists = jdbc.query("select 1 from zones where tenant_id=? and zone_id=?", rs -> rs.next() ? 1 : null,
+                tenant, zoneId);
+        if (exists == null) throw notFound();
         return jdbc.query("select version,set_version,deleted,created_at from zone_versions where tenant_id=? and zone_id=? order by version desc limit ? offset ?",
                 (rs, row) -> new com.polyzones.service.web.dto.ZoneVersionSummary(rs.getInt(1), rs.getLong(2), rs.getBoolean(3), rs.getTimestamp(4).toInstant()),
                 tenant, zoneId, size, (long) page * size);
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public List<com.polyzones.service.web.dto.ZoneSetSummary> sets(int page, int size) {
         validatePage(page, size);
         UUID tenant = TenantContext.requireTenantId();
@@ -68,6 +77,7 @@ public final class ZoneQueryService {
                 tenant, size, (long) page * size);
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public List<PointQueryResponse> batch(List<com.polyzones.service.web.dto.PointQueryRequest> points) {
         if (points == null || points.isEmpty() || points.size() > 1000) throw new ApplicationException("VALIDATION_FAILED", "A batch must contain between 1 and 1000 points.");
         UUID tenant = TenantContext.requireTenantId();

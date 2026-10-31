@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +34,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @Testcontainers
 @SpringBootTest(classes = ZoneServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class ZoneServiceApplicationIT {
     @Container
     @ServiceConnection
@@ -45,6 +48,8 @@ class ZoneServiceApplicationIT {
         Integer migrations = jdbc.queryForObject("select count(*) from flyway_schema_history where success", Integer.class);
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/health")).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        HttpRequest protectedManagement = HttpRequest.newBuilder(URI.create("http://localhost:8081/actuator/info")).GET().build();
+        HttpResponse<String> protectedResponse = HttpClient.newHttpClient().send(protectedManagement, HttpResponse.BodyHandlers.ofString());
         assertThat(migrations).isEqualTo(6);
         assertThat(jdbc.queryForObject("show statement_timeout", String.class)).isEqualTo("5s");
         assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='zone_set_versions'", Integer.class)).isEqualTo(1);
@@ -52,18 +57,23 @@ class ZoneServiceApplicationIT {
         assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name='alerts'", Integer.class)).isEqualTo(1);
         assertThat(response.statusCode()).isBetween(200, 299);
         assertThat(response.body()).contains("\"status\":\"UP\"");
+        assertThat(protectedResponse.statusCode()).isEqualTo(401);
     }
 
     @Test
     void zoneToTripFlowPersistsTenantScopedVersionsEventsAndDurableAck() throws Exception {
         UUID tenant = UUID.randomUUID();
         UUID employee = UUID.randomUUID();
+        UUID admin = UUID.randomUUID();
+        UUID operator = UUID.randomUUID();
         jdbc.update("insert into tenants(id,name) values (?,?)", tenant, "phase6-" + tenant);
         jdbc.update("insert into app_users(id,tenant_id,username,password_hash,role) values (?,?,?,'unused','EMPLOYEE')",
                 employee, tenant, "employee-" + employee);
-        Jwt jwt = Jwt.withTokenValue("test-token").header("alg", "none").subject(employee.toString())
-                .claim("tid", tenant.toString()).claim("roles", List.of("EMPLOYEE")).build();
-        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        jdbc.update("insert into app_users(id,tenant_id,username,password_hash,role) values (?,?,?,'unused','ADMIN')",
+                admin, tenant, "admin-" + admin);
+        jdbc.update("insert into app_users(id,tenant_id,username,password_hash,role) values (?,?,?,'unused','OPERATOR')",
+                operator, tenant, "operator-" + operator);
+        SecurityContextHolder.getContext().setAuthentication(authentication(admin, tenant, "ADMIN"));
         try {
             String zoneBody = """
                     {"zoneId":null,"type":"CITY","priority":10,"geometry":{"type":"Polygon","coordinates":[[[77.0,12.0],[77.01,12.0],[77.01,12.01],[77.0,12.01],[77.0,12.0]]]}}
@@ -93,6 +103,7 @@ class ZoneServiceApplicationIT {
                     .andExpect(status().isCreated()).andReturn();
             String tripId = tools.jackson.databind.json.JsonMapper.builder().build().readTree(started.getResponse().getContentAsString()).path("tripId").asString();
             Instant first = start.plusMillis(10);
+            SecurityContextHolder.getContext().setAuthentication(authentication(operator, tenant, "OPERATOR"));
             mvc.perform(post("/api/v1/trips/" + tripId + "/pings").contentType(APPLICATION_JSON)
                             .content("{\"pings\":[{\"seq\":0,\"eventTime\":\"" + first + "\",\"lat\":12.005,\"lon\":77.002,\"accuracyMeters\":5},{\"seq\":1,\"eventTime\":\"" + first.plusSeconds(5) + "\",\"lat\":12.005,\"lon\":77.008,\"accuracyMeters\":5}]}"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].status").value("ACCEPTED"));
@@ -159,6 +170,7 @@ class ZoneServiceApplicationIT {
             mvc.perform(post("/api/v1/trips/" + queuedTripId + "/complete")).andExpect(status().isOk())
                     .andExpect(jsonPath("$.durableAckedSeq").value(31));
 
+            SecurityContextHolder.getContext().setAuthentication(authentication(admin, tenant, "ADMIN"));
             String updateBody = """
                     {"zoneId":"%s","type":"CITY","priority":10,"geometry":{"type":"Polygon","coordinates":[[[77.0,12.0],[77.01,12.0],[77.01,12.01],[77.0,12.01],[77.0,12.0]]]}}
                     """.formatted(zoneId);
@@ -171,11 +183,15 @@ class ZoneServiceApplicationIT {
                     .andExpect(status().isNoContent());
 
             UUID otherTenant = UUID.randomUUID();
-            Jwt otherJwt = Jwt.withTokenValue("other-token").header("alg", "none").subject(UUID.randomUUID().toString())
-                    .claim("tid", otherTenant.toString()).claim("roles", List.of("ADMIN")).build();
-            SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(otherJwt));
+            SecurityContextHolder.getContext().setAuthentication(authentication(UUID.randomUUID(), otherTenant, "ADMIN"));
             mvc.perform(get("/api/v1/trips/" + tripId)).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
         } finally { SecurityContextHolder.clearContext(); }
+    }
+
+    private static JwtAuthenticationToken authentication(UUID userId, UUID tenantId, String role) {
+        Jwt jwt = Jwt.withTokenValue("test-token").header("alg", "none").subject(userId.toString())
+                .claim("tid", tenantId.toString()).claim("roles", List.of(role)).build();
+        return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 }

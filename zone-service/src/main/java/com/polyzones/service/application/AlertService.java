@@ -7,17 +7,19 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
-public final class AlertService {
+public class AlertService {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     public AlertService(JdbcTemplate jdbc, PlatformTransactionManager transactionManager) {
         this.jdbc = jdbc; this.transactions = new TransactionTemplate(transactionManager);
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public List<AlertResponse> list(UUID tripId, Instant from, Instant to, int page, int size) {
         if (page < 0 || size < 1 || size > 200 || (from != null && to != null && from.isAfter(to)))
             throw new ApplicationException("VALIDATION_FAILED", "Alert filters or pagination are invalid.");
@@ -31,6 +33,7 @@ public final class AlertService {
                 to == null ? null : java.sql.Timestamp.from(to), to == null ? null : java.sql.Timestamp.from(to), size, (long) page * size);
     }
 
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
     public AlertResponse acknowledge(UUID alertId) {
         UUID tenant = TenantContext.requireTenantId();
         AlertResponse row = transactions.execute(status -> {

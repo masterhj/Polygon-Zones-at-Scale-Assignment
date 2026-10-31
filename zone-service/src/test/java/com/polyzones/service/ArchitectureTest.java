@@ -8,6 +8,7 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 import java.util.UUID;
+import java.nio.file.Path;
 
 class ArchitectureTest {
     private final com.tngtech.archunit.core.domain.JavaClasses classes = new ClassFileImporter()
@@ -29,7 +30,10 @@ class ArchitectureTest {
     @Test void persistenceRepositoryMethodsAreTenantScoped() {
         for (var type : classes) {
             if (!type.getPackageName().contains("persistence.repository") || !type.isInterface()) continue;
-            if (type.getSimpleName().equals("TenantJpaRepository")) continue;
+            if (type.getSimpleName().equals("TenantJpaRepository")) {
+                for (var method : type.getMethods()) assertThat(method.getName()).isEqualTo("findById");
+                continue;
+            }
             for (var method : type.getMethods()) {
                 assertThat(method.getName()).as("repository method %s").startsWith("findByTenantId");
                 assertThat(method.getRawParameterTypes().getFirst().isEquivalentTo(UUID.class))

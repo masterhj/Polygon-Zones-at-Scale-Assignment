@@ -6,4 +6,6 @@ import java.util.UUID;
 import org.springframework.data.repository.RepositoryDefinition;
 
 @RepositoryDefinition(domainClass = TenantEntity.class, idClass = UUID.class)
-public interface TenantJpaRepository { Optional<TenantEntity> findById(UUID id); }
+public interface TenantJpaRepository {
+    Optional<TenantEntity> findById(UUID id);
+}

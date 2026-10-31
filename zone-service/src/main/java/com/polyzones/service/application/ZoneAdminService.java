@@ -16,9 +16,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Service
-public final class ZoneAdminService {
+public class ZoneAdminService {
     private final ZoneMapper mapper;
     private final ZoneSetPublisher publisher;
     private final SnapshotRegistry snapshots;
@@ -27,12 +28,14 @@ public final class ZoneAdminService {
         this.mapper = mapper; this.publisher = publisher; this.snapshots = snapshots;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ValidationIssueResponse> validate(ZoneEditRequest request) {
         try { mapper.toShape(request.geometry()); return List.of(); }
         catch (InvalidPolygonException invalid) { return invalid.result().issues().stream().map(issue -> new ValidationIssueResponse(issue.code().name(), issue.ringIndex(), issue.detail())).toList(); }
         catch (IllegalArgumentException invalid) { throw new ApplicationException("VALIDATION_FAILED", "The zone geometry is invalid."); }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ZoneResponse create(ZoneEditRequest request, String idempotencyKey) {
         UUID tenant = TenantContext.requireTenantId();
         UUID id = request.zoneId() == null ? (idempotencyKey == null ? UUID.randomUUID() : UUID.nameUUIDFromBytes((tenant + ":" + idempotencyKey).getBytes(java.nio.charset.StandardCharsets.UTF_8))) : request.zoneId();
@@ -41,6 +44,7 @@ public final class ZoneAdminService {
         return publish(tenant, new ZoneEditCommand(List.of(zone), List.of(), idempotencyKey, hash(request, id, shape), true), zone);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ZoneResponse update(UUID zoneId, ZoneEditRequest request, String idempotencyKey) {
         UUID tenant = TenantContext.requireTenantId();
         ZoneSnapshot current = latest(tenant);
@@ -53,6 +57,7 @@ public final class ZoneAdminService {
         return publish(tenant, new ZoneEditCommand(List.of(zone), List.of(), idempotencyKey, hash(request, zone.id().value(), shape)), zone);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public long delete(UUID zoneId, String idempotencyKey) {
         UUID tenant = TenantContext.requireTenantId();
         ZoneSnapshot current = latest(tenant);
