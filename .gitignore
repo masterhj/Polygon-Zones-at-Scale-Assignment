@@ -17,3 +17,7 @@ AGENTS.md
 # Agent & local environment artifacts
 .agents/
 .nosync
+
+# Assignment prompts and problem statement
+Case Study 7 - Polygon-Zones-at-Scale-Tariff-Zones-No-Go-Areas-Trip-Attribution.pdf
+docs/DECISIONS-DEVIATIONS.md
