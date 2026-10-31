@@ -18,6 +18,12 @@ The measurement ran on Apple M2 (8 CPU cores), 16 GB RAM, macOS 26.5.1, with Hom
 
 See [docs](docs/README.md) and [implementation log](docs/IMPLEMENTATION-LOG.md).
 
+## Phase 4 — versioned snapshots and publication
+
+Zone sets are written to PostgreSQL as `BUILDING`, composed outside transactions, committed as `PUBLISHED`, then atomically swapped into the tenant's in-memory snapshot registry. Historical loads include only versions owned by published sets; candidate construction can include its own BUILDING set and excludes every other unfinished or failed set. A trip can hold a reference to its pinned billing snapshot while new trips acquire the current version. Unpinned historical snapshots are cached with a vertex-weight bound.
+
+The 5,000-zone rebuild sanity test used deterministic square polygons and seeded query points on Apple M2 (8 cores), 16 GB RAM, macOS 26.5.1, OpenJDK 25.0.2. It scheduled 20,000 in-process point queries/s in each 5-second window and achieved 20,000.00/s at baseline and 20,000.13/s while swapping nine rebuilt snapshots every 500 ms. Query p50/p99 were 0.667/2.416 μs at baseline and 0.708/2.167 μs during rebuild. This short test-only result measures point queries against an in-memory snapshot; it is not HTTP ingestion or durable ping processing and does not replace the Phase 3 60-second load results. See [`07-phase-4-versioning-and-live-swap.md`](07-phase-4-versioning-and-live-swap.md) and the raw test output at `zone-service/target/perf-report.txt` after `./mvnw verify`.
+
 ## Phase 3 — spatial index and measured point queries
 
 `zone-core` now builds immutable STR-packed R-trees in private flat primitive arrays. `forEachContaining` reuses a per-thread traversal stack after initialization; the separate list-returning `query` allocates its results. A linear `NaiveZoneIndex` scans exact polygon geometry without the R-tree bbox shortcut and serves as an independent oracle. Tests compare complete sorted `ZoneHit` results over 50 fixed-seed scenarios × 100,000 points, plus node-capacity, boundary, hole, candidate-range, reentrancy and 16-reader cases.
