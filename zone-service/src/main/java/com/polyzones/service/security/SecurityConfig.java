@@ -15,6 +15,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 @Configuration
 @EnableMethodSecurity
+@org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 public class SecurityConfig {
     @Bean TenantContextFilter tenantContextFilter() { return new TenantContextFilter(); }
 

@@ -33,10 +33,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.context.ActiveProfiles;
 import tools.jackson.databind.json.JsonMapper;
 
 @Testcontainers
 @SpringBootTest(classes = com.polyzones.service.ZoneServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
 class JdbcTripCheckpointRepositoryIT {
     @Container @ServiceConnection
     static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18");

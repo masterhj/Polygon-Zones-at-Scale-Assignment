@@ -28,9 +28,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.test.context.ActiveProfiles;
 
 @Testcontainers
 @SpringBootTest(classes = com.polyzones.service.ZoneServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
 class ZonePublicationIT {
     @Container @ServiceConnection
     static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18");
