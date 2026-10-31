@@ -2,9 +2,7 @@
 ### Tariff Zones, No-Go Areas & Trip Attribution
 
 A versioned geographic zone engine for mobility platforms: admins draw zones, live GPS pings are matched against them, every trip's distance is split by zone for billing, and zones can be edited while the system runs.
-
-MoveInSync Backend Case Study 2026 · Case Study 7 · Advanced Track · Java 25, Spring Boot 4.1, PostgreSQL 18
-
+[DEMO VIDEO](https://drive.google.com/file/d/1lWHi95041xhhwSutoFXjsN-U0tB8xDlV/view?usp=sharing).
 ## What it does
 
 - **Zone management:** non-convex polygons with holes; unclosed rings, self-intersections and holes outside the outer ring are rejected. Every edit creates a new immutable version; old versions stay queryable.
@@ -74,13 +72,13 @@ flowchart TB
     Snapshot --> Cache
 ```
 
-## Quick start by your own
+## Quick start
 
 Requires Docker with Compose (Java 25 only if you build outside Docker).
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/masterhj/Polygon-Zones-at-Scale-Assignment.git
+cd Polygon-Zones-at-Scale-Assignment
 docker compose up --build                  # app + PostgreSQL, one command
 curl http://localhost:8081/actuator/health # {"status":"UP"}
 ./scripts/demo.sh                          # automated end-to-end demo (second terminal)
@@ -126,7 +124,7 @@ curl http://localhost:8080/api/v1/trips/$TRIP_ID/attribution -H "Authorization: 
 ```
 
 Demo result (`HAVERSINE_SEGMENT_SPLIT`): City 16.707 km + Airport 2.784 km = 19.491 km. A Globex operator requesting an Acme trip gets `404 TRIP_NOT_FOUND`. Ping timestamps must pass the clock-skew check.
-[DEMO VIDEO](https://drive.google.com/file/d/1PCYjCDDQJRtY3TQaJ3ouBIw95M2hr84w/view?usp=sharing)
+
 ## Trip processing
 
 ```mermaid
@@ -187,6 +185,14 @@ flowchart LR
 | No-go alerts | Entering a NO_GO zone during the night window raises an alert. |
 | Pings | Each ping has `tripId`, `seq`, `lat`, `lon`, event time. Duplicates are ignored (`DUPLICATE`); late, invalid-coordinate and clock-skewed pings are rejected. |
 | Acknowledgement | An accepted ping is not yet durably processed; the durable acknowledgement advances only after results and checkpoint are committed. |
+
+## Frontend View of Employee
+
+<img src="https://drive.google.com/uc?export=view&id=1XxPMuQSQUTDU-WiB3HNeNoL1SJFnZFXw" alt="Frontend View of Employee" width="700" />
+
+## Frontend View of Admin
+
+<img src="https://drive.google.com/uc?export=view&id=1I2Dheb400UqHs4YvDhZvJUIA0TQGFy06" alt="Frontend View of Admin" width="700" />
 
 ## Spatial index and complexity
 
@@ -263,6 +269,9 @@ sequenceDiagram
 ```
 
 If the build fails, the previous snapshot keeps serving. Readers never see a half-built index. A concurrency test runs 16 reader threads against 200 rebuild-and-publish cycles: zero torn snapshots, zero version regressions.
+## DATABASE Schema
+
+you can access through this [Link](https://drive.google.com/file/d/1S7lgu43K-9cTAdTG9EcJNvTNIqo_KFYq/view?usp=sharing)
 
 ## Reliability
 
@@ -303,6 +312,8 @@ JWT (HS256) with `sub`, `tid` and roles, no personal data in the token. Roles: *
 ## Monitoring and caching
 
 Prometheus metrics (management port): `ping_processing_lag_seconds`, `ping_worker_failure_total`, `checkpoint_failures_total`, `ping_rejected_total{reason=late|invalid|clock_skew}`, `retry_total`, `ping_queue_depth`; plus health and standard JVM/HTTP metrics.
+
+<img src="https://drive.google.com/uc?export=view&id=19feGzfZcv1vmMy2f1XJFuf9lORp2MsFH" alt="Architecture Diagram" width="1200" />
 
 | Cache | Policy | What can be stale |
 |---|---|---|
