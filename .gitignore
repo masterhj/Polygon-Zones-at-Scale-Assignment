@@ -13,3 +13,7 @@ docs/benchmarks/tmp/
 # Internal agent specifications & prompts
 [0-1][0-9]-*.md
 AGENTS.md
+
+# Agent & local environment artifacts
+.agents/
+.nosync
