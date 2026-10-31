@@ -9,3 +9,7 @@ node_modules/
 .DS_Store
 .env
 docs/benchmarks/tmp/
+
+# Internal agent specifications & prompts
+[0-1][0-9]-*.md
+AGENTS.md
